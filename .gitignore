@@ -1,0 +1,90 @@
+# Python related files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.env
+*.venv
+venv/
+ENV/
+env/
+*.envrc
+.env.*
+
+# Pipenv files
+Pipfile.lock
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# FastAPI specific
+instance/
+*.db
+*.sqlite3
+
+# Logs and database
+*.log
+*.sqlite3
+*.db
+*.sqlite
+*.bak
+*.old
+
+# macOS related
+.DS_Store
+
+# Windows related
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# pyenv
+.python-version
+
+# VSCode
+.vscode/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/*.code-workspace
+.vscode/extensions.json
+.vscode/*.history
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# pytest
+.cache
+pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+
+# mypy
+.mypy_cache/
+dmypy.json
+dmypy.log
+
+# SQLAlchemy Migrations
+migrations/
+alembic/
+
+# Local development databases
+*.db
+*.sqlite3
+
+# Secrets
+secrets/
+
+# Optional: ignoring compiled code
+*.so
+*.dylib
+*.dll
+
+# Ignore any files matching *-local
+*-local.*
