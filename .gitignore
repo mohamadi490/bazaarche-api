@@ -73,6 +73,7 @@ dmypy.log
 # SQLAlchemy Migrations
 migrations/
 alembic/
+alembic.ini
 
 # Local development databases
 *.db
