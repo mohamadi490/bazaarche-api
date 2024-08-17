@@ -32,12 +32,12 @@ class UserService:
         db.commit()
         db.refresh(db_user)
     
-    def create_quick(self, db: Session, user_in: UserCreate):
-        hashed_password = hash_password(user_in.password)
-        db_user = User(email=user_in.email, password=hashed_password, role_id=3, is_active=True)
+    def create_quick(self, db: Session, username: str):
+        db_user = User(phone_number=username, role_id=3, is_active=True)
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
+        return db_user
 
     def update(self, db: Session, db_user: User, user_in: UserUpdate):
         if user_in.password:

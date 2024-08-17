@@ -2,11 +2,11 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 class UserBase(BaseModel):
-    username: str
-    email: EmailStr
+    username: str | None
+    email: EmailStr | None
     phone_number: str
-    first_name: str
-    last_name: str
+    first_name: str | None
+    last_name: str | None
     role_id: int
 
 class UserCreate(UserBase):
