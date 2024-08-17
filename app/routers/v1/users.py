@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from core.security import get_current_user
+from db.models.user import User
 from db.base import get_db
 from schemas.user import FullUser, UserCreate, UserUpdate
 from starlette import status
@@ -13,19 +15,19 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=Result[List[FullUser]], status_code=status.HTTP_200_OK)
-async def get_users(db: Session = Depends(get_db)):
+async def get_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     users = user_service.get_all(db)
     return Result(isDone=True, data=users, message='')
 
 @router.get("/{user_id}", response_model=Result[FullUser], status_code=status.HTTP_200_OK)
-async def get_user(user_id: int, db: Session = Depends(get_db)):
+async def get_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = user_service.get(db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=404, detail='user not found!')
     return Result(isDone=True, data=user, message='')
 
 @router.post("/create", response_model=Result[None], status_code=status.HTTP_201_CREATED)
-def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
+def create_user(user_in: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if user_in.email:
         user = user_service.get_by_email(db, email=user_in.email)
         if user:
@@ -38,7 +40,7 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     return Result(isDone=True, data=None, message='user created successfully')
 
 @router.put("/update/{user_id}", response_model=Result[None], status_code=status.HTTP_200_OK)
-def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = user_service.get(db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -46,7 +48,7 @@ def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(get_db)
     return Result(isDone=True, data=None, message='user updated successfully')
 
 @router.delete("/delete/{user_id}", response_model=Result[None], status_code=status.HTTP_200_OK)
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+async def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = user_service.get(db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=404, detail='user not found')
