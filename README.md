@@ -1,6 +1,6 @@
 # Bazaarche
 
-Bazaarcheh is an e-commerce website built with FastAPI and PostgreSQL.
+Bazaarche is an e-commerce api project built with FastAPI and PostgreSQL.
 
 ## Prerequisites
 
@@ -57,7 +57,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-[Specify your license here, e.g., MIT]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contact
 
