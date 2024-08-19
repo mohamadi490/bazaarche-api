@@ -1,4 +1,4 @@
-# Bazaarcheh
+# Bazaarche
 
 Bazaarcheh is an e-commerce website built with FastAPI and PostgreSQL.
 
@@ -13,8 +13,8 @@ Before you begin, ensure you have met the following requirements:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/m.mohamadi490/bazaarcheh.git
-   cd bazaarcheh
+   git clone https://github.com/m.mohamadi490/bazaarche_api.git
+   cd bazaarche
    ```
 
 2. Create a virtual environment:
@@ -63,4 +63,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 [m.mohamadi] - [m.mohamadi490@gmail.com]
 
-Project Link: [https://github.com/mohamadi490/bazaarcheh](https://github.com/mohamadi490/bazaarcheh)
+Project Link: [https://github.com/mohamadi490/bazaarche_api](https://github.com/mohamadi490/bazaarche_api)
