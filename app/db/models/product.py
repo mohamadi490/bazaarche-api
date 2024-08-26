@@ -1,7 +1,10 @@
 from datetime import datetime
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, DateTime, Numeric, String, Enum, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy import and_
 from db.base import Base
+from .image import Image
 import enum
 
 class ProductType(enum.Enum):
@@ -36,11 +39,27 @@ class Product(Base):
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime, nullable=True)
     
+    user = relationship("User", back_populates="products")
     variations = relationship("ProductVariation", back_populates="product", cascade="all, delete-orphan")
-    images = relationship('Image', primaryjoin="and_(Product.id==Image.entity_id, Image.entity_type=='product')", cascade="all, delete-orphan")
-    attributes = relationship("ProductAttribute", back_populates="product")
+    attributes = relationship("ProductAttribute", back_populates="product", cascade="all, delete-orphan")
     categories = relationship("Category", secondary="product_categories")
     tags = relationship("Tag", secondary="product_tags")
+    
+    @declared_attr
+    def images(cls):
+        return relationship(
+            "Image",
+            primaryjoin=lambda: and_(
+                Image.entity_id == cls.id,
+                Image.entity_type == 'product'
+            ),
+            foreign_keys=[Image.entity_id, Image.entity_type],
+            cascade="all, delete-orphan"
+        )
+
+    @property
+    def thumbnail(self):
+        return next((img for img in self.images if img.is_thumbnail), None)
 
 class ProductVariation(Base):
     __tablename__ = 'product_variations'
@@ -70,6 +89,8 @@ class Attribute(Base):
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime, nullable=True)
+    
+    products = relationship('ProductAttribute', back_populates='attribute')
 
 class ProductAttribute(Base):
     __tablename__ = 'product_attributes'
@@ -100,7 +121,7 @@ class Category(Base):
     deleted_at = Column(DateTime)
     
     products = relationship('Product', secondary="product_categories", back_populates='categories')
-    children = relationship('Category', back_populates='parent')
+    parent = relationship('Category', remote_side=[id], backref=backref('children', cascade='all, delete-orphan'))
     
 class Tag(Base):
     __tablename__ = 'tags'

@@ -24,6 +24,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime, nullable=True)
+    
+    products = relationship("Product", back_populates="user")
 
 class Role(Base):
     __tablename__ = 'roles'
