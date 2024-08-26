@@ -82,6 +82,9 @@ alembic.ini
 # Secrets
 secrets/
 
+#upload
+uploads
+
 # Optional: ignoring compiled code
 *.so
 *.dylib
