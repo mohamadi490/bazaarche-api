@@ -9,6 +9,10 @@ class UserBase(BaseModel):
     last_name: str | None
     role_id: int
 
+class SimpleUser(BaseModel):
+    id: int
+    username: str | None
+
 class UserCreate(UserBase):
     password: str
 
