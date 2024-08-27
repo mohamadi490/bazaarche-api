@@ -23,10 +23,7 @@ class ProductAttributeCreate(ProductAttributeBase):
     
 class ProductAttribute(ProductAttributeBase):
     id: int
-    product_id: int
-    attribute: Attribute
-    created_at: datetime
-    updated_at: datetime
+    attribute: AttributeBase
 
     class Config:
         orm_mode = True

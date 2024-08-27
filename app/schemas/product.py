@@ -6,9 +6,8 @@ from schemas.category import SimpleCategory
 from schemas.media import Image, ImageBase
 from schemas.user import SimpleUser
 from schemas.attribute import *
-        
-class Variation(BaseModel):
-    id: int
+
+class VariationBase(BaseModel):
     sku: str
     cost_price: int
     price: int
@@ -16,6 +15,9 @@ class Variation(BaseModel):
     quantity: int
     low_stock_threshold: int
     status: str
+        
+class Variation(VariationBase):
+    id: int
 
 class ProductBase(BaseModel):
     name: str
@@ -34,11 +36,10 @@ class SimpleProduct(BaseModel):
         orm_mode = True
 
 class ProductCreate(ProductBase):
-    user_id: int
     category_ids: List[int]
     attributes: List[ProductAttributeCreate]
     images: List[ImageBase]
-    variations: List[Variation]
+    variations: List[VariationBase]
 
 class Product(ProductBase):
     id: Optional[int]
@@ -47,7 +48,7 @@ class Product(ProductBase):
     categories: Optional[List[SimpleCategory]]
     attributes: Optional[List[ProductAttribute]]
     variations: Optional[List[Variation]]
-    images: Optional[List[Image]]
+    images: Optional[List[ImageBase]]
     user: SimpleUser
 
     class Config:
@@ -63,7 +64,7 @@ class ProductList(ProductBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     categories: Optional[List[SimpleCategory]]
-    images: Optional[List[Image]]
+    images: Optional[List[ImageBase]]
     user: SimpleUser
 
     class Config:

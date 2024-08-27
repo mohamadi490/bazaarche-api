@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, Query
 from starlette import status
+from core.security import get_current_user
 from db.base import get_db
 from sqlalchemy.orm import Session
 from crud.product import product_service
 from schemas.product import ProductBase, Product, ProductCreate, SimpleProduct, ProductList
 from schemas.result import PaginationResult, Result
 from typing import List
+
+from schemas.user import UserBase
 
 product_router = APIRouter(
     prefix='/products',
@@ -23,6 +26,6 @@ async def get_product(product_slug: str, db: Session = Depends(get_db)):
     return Result(isDone=True, data=product_item, message='عملیات با موفقیت انجام شد!')
 
 @product_router.post("/create", response_model=Result[None], status_code=status.HTTP_201_CREATED)
-async def create_product(product_in: ProductCreate, db: Session = Depends(get_db)):
-    product_service.create(db=db, product_in=product_in)
+async def create_product(product_in: ProductCreate, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
+    product_service.create(db=db, product_in=product_in, current_user=current_user)
     return Result(isDone=True, data=None, message='محصول با موفقیت ایجاد شد')
