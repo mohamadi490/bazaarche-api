@@ -20,7 +20,7 @@ def panel_login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     user = auth_service.authenticate_user(form_data.username, form_data.password, db)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='اطلاعات وارد شده اشتباه است')
-    token = create_access_token(data=str(user.id), expires_delta=timedelta(minutes=20))
+    token = create_access_token(subject=str(user.id), expires_delta=timedelta(minutes=20))
     return {'access_token': token, 'token_type': 'bearer'}
 
 
