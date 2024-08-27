@@ -1,55 +1,11 @@
 
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 from schemas.category import SimpleCategory
-
+from schemas.media import Image, ImageBase
 from schemas.user import SimpleUser
-
-class ImageBase(BaseModel):
-    url: str
-    alt: Optional[str] = None
-    is_thumbnail: bool = False
-    order: int
-    
-class Image(ImageBase):
-    id: int
-    entity_type: str
-    entity_id: int
-    created_at: datetime
-    updated_at: datetime
-    
-    class Config:
-        orm_mode = True
-    
-
-class AttributeBase(BaseModel):
-    name: str
-    
-class Attribute(AttributeBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        orm_mode = True
-
-class ProductAttributeBase(BaseModel):
-    value: str
-    show_top: bool = False
-
-class ProductAttributeCreate(ProductAttributeBase):
-    attribute_id: int
-    
-class ProductAttribute(ProductAttributeBase):
-    id: int
-    product_id: int
-    attribute: Attribute
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        orm_mode = True
+from schemas.attribute import *
         
 class Variation(BaseModel):
     id: int
