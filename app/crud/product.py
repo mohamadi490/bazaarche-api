@@ -82,7 +82,8 @@ class ProductService:
                     url=img.url,
                     alt=img.alt,
                     is_thumbnail=img.is_thumbnail,
-                    order=img.order
+                    order=img.order,
+                    entity_type='product'
                 )
                 product.images.append(image)
 

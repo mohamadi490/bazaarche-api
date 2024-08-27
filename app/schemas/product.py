@@ -7,7 +7,7 @@ from schemas.category import SimpleCategory
 from schemas.user import SimpleUser
 
 class ImageBase(BaseModel):
-    url: HttpUrl
+    url: str
     alt: Optional[str] = None
     is_thumbnail: bool = False
     order: int
