@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel
 from schemas.category import SimpleCategory
-from schemas.media import Image, ImageBase
+from schemas.media import Image, ImageBase, ProductImage, ProductImage
 from schemas.user import SimpleUser
 from schemas.attribute import *
 
@@ -41,6 +41,15 @@ class ProductCreate(ProductBase):
     images: List[ImageBase]
     variations: List[VariationBase]
 
+class ProductUpdate(ProductBase):
+    category_ids: List[int]
+    attributes: List[ProductAttributeUpdate]
+    images: List[ProductImage]
+    variations: List[Variation]
+    deleted_image_ids: List[int]
+    deleted_attr_ids: List[int]
+    deleted_var_ids: List[int]
+
 class Product(ProductBase):
     id: Optional[int]
     created_at: Optional[datetime]
@@ -48,7 +57,7 @@ class Product(ProductBase):
     categories: Optional[List[SimpleCategory]]
     attributes: Optional[List[ProductAttribute]]
     variations: Optional[List[Variation]]
-    images: Optional[List[ImageBase]]
+    images: Optional[List[ProductImage]]
     user: SimpleUser
 
     class Config:

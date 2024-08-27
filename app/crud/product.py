@@ -5,7 +5,7 @@ from db.models.product import Category, Product, ProductAttribute, ProductVariat
 from sqlalchemy.orm import joinedload, contains_eager
 from db.models.user import User
 from schemas.pagination import Pagination
-from schemas.product import ProductCreate
+from schemas.product import ProductCreate, ProductUpdate
 from starlette import status
 import json
 
@@ -49,8 +49,9 @@ class ProductService:
         
         return product_item
     
+    
     def create(self, db: Session, product_in: ProductCreate, current_user: str):
-        product_item = db.query(Product).filter(Category.slug == product_in.slug).first()
+        product_item = db.query(Product).filter(Product.slug == product_in.slug).first()
         if product_item:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='لینک ارسالی تکراری می باشد')
         
@@ -109,6 +110,105 @@ class ProductService:
         db.commit()
         db.refresh(product)
         return product
+    
+    def update(self, db: Session, product_slug: str, product_in: ProductUpdate, current_user: str):
 
+        product_db = db.query(Product).filter(Product.slug == product_slug).first()
+        if not product_db:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر پیدا نشد')
+        
+        product_db.name = product_in.name
+        product_db.slug = product_in.slug
+        product_db.type = product_in.type
+        product_db.featured = product_in.featured
+        product_db.description = product_in.description
+        product_db.body = product_in.body
+        product_db.status = product_in.status
+        
+        # Update categories
+        if product_in.category_ids:
+            product_db.categories = [db.query(Category).get(cat_id) for cat_id in product_in.category_ids]
+        
+        if product_in.deleted_attr_ids:
+                product_db.attributes = [attr for attr in product_db.attributes if attr.id not in product_in.deleted_attr_ids]
+        
+        attributes = {attr.id: attr for attr in product_db.attributes}
+        for attr in product_in.attributes:
+            if attr.id in attributes:
+                # Update existing attribute
+                item = db.query(ProductAttribute).filter(ProductAttribute.id == attr.id).first()
+                item.value = attr.value
+                item.show_top = attr.show_top
+                item.attribute_id = attr.attribute_id
+            else:
+                product_attr = ProductAttribute(
+                    attribute_id=attr.attribute_id,
+                    value=attr.value,
+                    show_top=attr.show_top
+                )
+                product_db.attributes.append(product_attr)
+        
+        if product_in.deleted_image_ids:
+                product_db.images = [image for image in product_db.images if image.id not in product_in.deleted_image_ids]
+        
+        images = {img.id: img for img in product_db.images}
+        for img in product_in.images:
+            if img.id in images:
+                # Update existing images
+                image_item = db.query(Image).filter(Image.id == img.id).first()
+                image_item.url = img.url
+                image_item.alt = img.alt
+                image_item.order = img.order
+                image_item.is_thumbnail = img.is_thumbnail
+            else:
+                image = Image(
+                    url=img.url,
+                    alt=img.alt,
+                    is_thumbnail=img.is_thumbnail,
+                    order=img.order,
+                    entity_type='product'
+                )
+                product_db.images.append(image)
+            
+        if product_in.deleted_var_ids:
+                product_db.variations = [var for var in product_db.variations if var.id not in product_in.deleted_var_ids]
+
+        variations = {var.id: var for var in product_db.variations}
+        for var in product_in.variations:
+            if var.id in variations:
+                # Update existing variation
+                var_item = db.query(ProductVariation).filter(ProductVariation.id == var.id).first()
+                var_item.sku = var.sku
+                var_item.price = var.price
+                var_item.final_price = var.final_price
+                var_item.cost_price = var.cost_price
+                var_item.quantity = var.quantity
+                var_item.low_stock_threshold = var.low_stock_threshold
+                var_item.status = var.status
+            else:
+                variable = ProductVariation(
+                    sku = var.sku,
+                    price = var.price,
+                    final_price = var.final_price,
+                    cost_price = var.cost_price,
+                    quantity = var.quantity,
+                    low_stock_threshold = var.low_stock_threshold,
+                    status = var.status
+                )
+                product_db.variations.append(variable)
+                
+                
+        db.commit()
+        db.refresh(product_db)
+        return product_db
+    
+    def delete(self, db: Session, product_slug: str, current_user: str):
+        product_db = db.query(Product).filter(Product.slug == product_slug).first()
+        
+        if not product_db:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر یافت نشد')
+        
+        db.delete(product_db)
+        db.commit()
 
 product_service = ProductService()

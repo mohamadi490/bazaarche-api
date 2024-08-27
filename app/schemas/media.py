@@ -9,6 +9,9 @@ class ImageBase(BaseModel):
     alt: Optional[str] = None
     is_thumbnail: bool = False
     order: int
+
+class ProductImage(ImageBase):
+    id: int
     
 class Image(ImageBase):
     id: int

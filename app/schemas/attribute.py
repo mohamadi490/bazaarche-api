@@ -20,6 +20,9 @@ class ProductAttributeBase(BaseModel):
 
 class ProductAttributeCreate(ProductAttributeBase):
     attribute_id: int
+
+class ProductAttributeUpdate(ProductAttributeCreate):
+    id: int
     
 class ProductAttribute(ProductAttributeBase):
     id: int
