@@ -37,15 +37,19 @@ class ProductService:
     
     def get(self, db: Session, product_slug: str):
         product_item = db.query(Product).options(
+                joinedload(Product.user).load_only(User.id, User.username),
                 joinedload(Product.images),
-                joinedload(Product.categories),
+                joinedload(Product.categories).load_only(Category.id, Category.name,Category.slug, Category.parent_id),
                 joinedload(Product.attributes).joinedload(ProductAttribute.attribute),
                 joinedload(Product.variations),
                 joinedload(Product.tags)).filter(Product.slug == product_slug).first()
-
+        
+        if not product_item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر پیدا نشد')
+        
         return product_item
     
-    def create(self, db: Session, product_in: ProductCreate):
+    def create(self, db: Session, product_in: ProductCreate, current_user: str):
         product_item = db.query(Product).filter(Category.slug == product_in.slug).first()
         if product_item:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='لینک ارسالی تکراری می باشد')
@@ -54,7 +58,7 @@ class ProductService:
             name=product_in.name,
             slug=product_in.slug,
             type=product_in.type,
-            user_id=1,
+            user_id=int(current_user),
             featured=product_in.featured,
             description=product_in.description,
             body=product_in.body,
