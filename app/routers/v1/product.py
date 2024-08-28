@@ -34,12 +34,12 @@ async def create_product(product_in: ProductCreate, db: Session = Depends(get_db
 
 
 @product_router.put("/update/{product_slug}", response_model=Result[None], status_code=status.HTTP_200_OK)
-async def create_product(product_in: ProductUpdate, product_slug: str, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
+async def update_product(product_in: ProductUpdate, product_slug: str, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
     product_service.update(db=db, product_in=product_in, product_slug=product_slug, current_user=current_user)
     return Result(isDone=True, data=None, message='محصول با موفقیت ویرایش شد')
 
 
 @product_router.delete("/delete/{product_slug}", response_model=Result[None], status_code=status.HTTP_200_OK)
-async def create_product(product_slug: str, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
+async def delete_product(product_slug: str, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
     product_service.delete(db=db, product_slug=product_slug, current_user=current_user)
     return Result(isDone=True, data=None, message='محصول با موفقیت حذف شد')
