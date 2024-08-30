@@ -3,12 +3,6 @@ from sqlalchemy import Column, Table, ForeignKey, DateTime, Integer, String, Boo
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-# Association table for many-to-many relationship between Role and Permission
-role_permission = Table('role_permission', Base.metadata,
-    Column('role_id', Integer, ForeignKey('roles.id')),
-    Column('permission_id', Integer, ForeignKey('permissions.id'))
-)
-
 class User(Base):
     __tablename__ = "users"
 
@@ -24,8 +18,6 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime, nullable=True)
-    
-    products = relationship("Product", back_populates="user")
 
 class Role(Base):
     __tablename__ = 'roles'
@@ -37,7 +29,7 @@ class Role(Base):
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime, nullable=True)
     
-    permissions = relationship("Permission", secondary=role_permission, back_populates="roles")
+    permissions = relationship("Permission", secondary="role_permission", back_populates="roles")
     
 class Permission(Base):
     __tablename__ = 'permissions'
@@ -48,4 +40,10 @@ class Permission(Base):
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime, nullable=True)
     
-    roles = relationship("Role", secondary=role_permission, back_populates="permissions")
+    roles = relationship("Role", secondary="role_permission", back_populates="permissions")
+
+# Association table for many-to-many relationship between Role and Permission
+role_permission = Table('role_permission', Base.metadata,
+    Column('role_id', Integer, ForeignKey('roles.id')),
+    Column('permission_id', Integer, ForeignKey('permissions.id'))
+)

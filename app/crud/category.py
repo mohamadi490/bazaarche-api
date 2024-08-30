@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import HTTPException, Query
 from sqlalchemy.orm import Session
 from starlette import status
-from db.models.product import Category
+from db.models.collections import Category
 from schemas.pagination import Pagination
 from schemas.category import CategoryCreate
 

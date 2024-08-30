@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, DateTime, Numeric, String, Enum, Table
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy import and_
 from db.base import Base
@@ -8,14 +8,14 @@ from .image import Image
 import enum
 
 class ProductType(enum.Enum):
-    Simple = 'simple'
-    Variable = 'variable'
+    SIMPLE = 'simple'
+    VARIABLE = 'variable'
     
 class InventoryStatus(enum.Enum):
-    InStock = 'in_stock'
-    OutOfStock = 'out_of_stock'
-    PreOrder = 'pre_order'
-    BackOrder = 'back_order'
+    INSTOCK = 'in_stock'    
+    OUTOFSTOCK = 'out_of_stock'
+    PREORDER = 'pre_order'
+    CALL = 'call'
     
 class Status(enum.Enum):
     PUBLISHED = 'published'
@@ -44,6 +44,8 @@ class Product(Base):
     attributes = relationship("ProductAttribute", back_populates="product", cascade="all, delete-orphan")
     categories = relationship("Category", secondary="product_categories")
     tags = relationship("Tag", secondary="product_tags")
+    
+    cart_items = relationship("CartItem", back_populates="product")
     
     @declared_attr
     def images(cls):
@@ -106,34 +108,6 @@ class ProductAttribute(Base):
     
     product = relationship('Product', back_populates='attributes')
     attribute = relationship('Attribute', back_populates='products')
-
-
-class Category(Base):
-    __tablename__ = 'categories'
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
-    slug = Column(String(255), unique=True, nullable=False)
-    description = Column(String)
-    parent_id = Column(Integer, ForeignKey('categories.id'))
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now)
-    deleted_at = Column(DateTime)
-    
-    products = relationship('Product', secondary="product_categories", back_populates='categories')
-    parent = relationship('Category', remote_side=[id], backref=backref('children', cascade='all, delete-orphan'))
-    
-class Tag(Base):
-    __tablename__ = 'tags'
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
-    slug = Column(String(255), unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now)
-    deleted_at = Column(DateTime)
-    
-    products = relationship('Product', secondary="product_tags", back_populates='tags')
 
 
 product_categories = Table('product_categories', Base.metadata,

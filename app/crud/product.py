@@ -1,13 +1,13 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from db.models.image import Image
-from db.models.product import Category, Product, ProductAttribute, ProductVariation
-from sqlalchemy.orm import joinedload, contains_eager
+from db.models.product import Product, ProductAttribute, ProductVariation
+from db.models.collections import Category
+from sqlalchemy.orm import joinedload
 from db.models.user import User
 from schemas.pagination import Pagination
 from schemas.product import ProductCreate, ProductUpdate
 from starlette import status
-import json
 
 
 class ProductService:
