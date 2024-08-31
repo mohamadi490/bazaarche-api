@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from crud.category import category_service
-from db.base import get_db
+from db.database import get_db
 from schemas.category import Category, CategoryBase, CategoryCreate
 from schemas.result import PaginationResult, Result
 from starlette import status

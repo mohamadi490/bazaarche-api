@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.security import get_current_user
+from db.database import get_db
 from db.models.user import User
-from db.base import get_db
 from schemas.user import FullUser, UserCreate, UserUpdate
 from starlette import status
 from crud.user import user_service
