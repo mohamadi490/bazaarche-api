@@ -1,6 +1,4 @@
 from fastapi import FastAPI
-from db.base import Base
-from db.session import engine
 from routers.v1.users import router as users_router
 from routers.v1.auth import router as auth_router
 from routers.v1.roles import role_router
@@ -8,7 +6,7 @@ from routers.v1.category import category_router
 from routers.v1.product import product_router
 from routers.v1.media import media_router
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
