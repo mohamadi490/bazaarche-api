@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from db.models.image import Image
+from db.models.file import File
 from db.models.product import Product, ProductAttribute, ProductVariation
 from db.models.collections import Category
 from sqlalchemy.orm import joinedload
@@ -83,7 +83,7 @@ class ProductService:
         # Add images
         if product_in.images:
             for img in product_in.images:
-                image = Image(
+                image = File(
                     url=img.url,
                     alt=img.alt,
                     is_thumbnail=img.is_thumbnail,
@@ -155,13 +155,13 @@ class ProductService:
         for img in product_in.images:
             if img.id in images:
                 # Update existing images
-                image_item = db.query(Image).filter(Image.id == img.id).first()
+                image_item = db.query(File).filter(File.id == img.id).first()
                 image_item.url = img.url
                 image_item.alt = img.alt
                 image_item.order = img.order
                 image_item.is_thumbnail = img.is_thumbnail
             else:
-                image = Image(
+                image = File(
                     url=img.url,
                     alt=img.alt,
                     is_thumbnail=img.is_thumbnail,
