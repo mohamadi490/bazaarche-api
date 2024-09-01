@@ -22,6 +22,7 @@ class User(Base):
     deleted_at = Column(DateTime, nullable=True)
     
     products = relationship("Product", back_populates="user")
+    carts = relationship("Cart", back_populates="user")
 
 class Role(Base):
     __tablename__ = 'roles'

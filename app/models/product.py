@@ -44,8 +44,7 @@ class Product(Base):
     categories = relationship('Category', secondary="product_categories")
     tags = relationship('Tag', secondary="product_tags")
     files = relationship("File", back_populates="product")
-    
-    # cart_items = relationship("CartItem", back_populates="product")
+    cart_items = relationship("CartItem", back_populates="product")
     
     @declared_attr
     def files(cls):
