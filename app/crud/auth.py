@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from crud.user import user_service
 from schemas.auth import LoginRequest, RegisterRequest
-from db.models.user import User
+from models.user import User
 from core.security import verify_password
 from external_services.sms_service import send_sms
 from crud.verification_code import verification_code_service as vc_service
@@ -56,8 +56,6 @@ class AuthService:
         user = user_service.create_quick(db, register_in.username)
         token_data = create_access_token(user.id)
         return token_data
-        
-
-
+    
 
 auth_service = AuthService()

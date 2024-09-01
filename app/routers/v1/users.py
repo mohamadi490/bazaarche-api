@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.security import get_current_user
-from db.database import get_db
-from db.models.user import User
-from schemas.user import FullUser, UserCreate, UserUpdate
+from core.database import get_db
+from models.user import User
+from schemas.user import FullUser, UserBase, UserCreate, UserUpdate
 from starlette import status
 from crud.user import user_service
 from typing import List
@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=Result[List[FullUser]], status_code=status.HTTP_200_OK)
-async def get_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_users(db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
     users = user_service.get_all(db)
     return Result(isDone=True, data=users, message='')
 

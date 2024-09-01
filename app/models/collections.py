@@ -1,12 +1,10 @@
 
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship, backref, DeclarativeBase
+from sqlalchemy.orm import relationship, backref
+from .base import Base
 
-class CollectionBase(DeclarativeBase):
-    pass
-
-class Category(CollectionBase):
+class Category(Base):
     __tablename__ = 'categories'
     
     id = Column(Integer, primary_key=True)
@@ -22,7 +20,7 @@ class Category(CollectionBase):
     products = relationship('Product', secondary="product_categories", back_populates='categories')
     parent = relationship('Category', remote_side=[id], backref=backref('children', cascade='all, delete-orphan'))
     
-class Tag(CollectionBase):
+class Tag(Base):
     __tablename__ = 'tags'
     
     id = Column(Integer, primary_key=True)

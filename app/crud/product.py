@@ -1,10 +1,10 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from db.models.file import File
-from db.models.product import Product, ProductAttribute, ProductVariation
-from db.models.collections import Category
+from models.file import File
+from models.product import Product, ProductAttribute, ProductVariation
+from models.collections import Category
 from sqlalchemy.orm import joinedload
-from db.models.user import User
+from models.user import User
 from schemas.pagination import Pagination
 from schemas.product import ProductCreate, ProductUpdate
 from starlette import status
@@ -15,7 +15,7 @@ class ProductService:
     def get_all(self, db: Session, page: int, size: int):
         query = db.query(Product).options(
             joinedload(Product.user).load_only(User.id, User.username),
-            joinedload(Product.images),
+            joinedload(Product.files),
             joinedload(Product.variations),
             joinedload(Product.categories).load_only(Category.id, Category.name,Category.slug, Category.parent_id),
             ).order_by(Product.created_at.desc())
@@ -38,7 +38,7 @@ class ProductService:
     def get(self, db: Session, product_slug: str):
         product_item = db.query(Product).options(
                 joinedload(Product.user).load_only(User.id, User.username),
-                joinedload(Product.images),
+                joinedload(Product.files),
                 joinedload(Product.categories).load_only(Category.id, Category.name,Category.slug, Category.parent_id),
                 joinedload(Product.attributes).joinedload(ProductAttribute.attribute),
                 joinedload(Product.variations),
@@ -90,7 +90,7 @@ class ProductService:
                     order=img.order,
                     entity_type='product'
                 )
-                product.images.append(image)
+                product.files.append(image)
 
         # Add variations
         if product_in.variations:
@@ -149,9 +149,9 @@ class ProductService:
                 product_db.attributes.append(product_attr)
         
         if product_in.deleted_image_ids:
-                product_db.images = [image for image in product_db.images if image.id not in product_in.deleted_image_ids]
+                product_db.files = [image for image in product_db.files if image.id not in product_in.deleted_image_ids]
         
-        images = {img.id: img for img in product_db.images}
+        images = {img.id: img for img in product_db.files}
         for img in product_in.images:
             if img.id in images:
                 # Update existing images
@@ -168,7 +168,7 @@ class ProductService:
                     order=img.order,
                     entity_type='product'
                 )
-                product_db.images.append(image)
+                product_db.files.append(image)
             
         if product_in.deleted_var_ids:
                 product_db.variations = [var for var in product_db.variations if var.id not in product_in.deleted_var_ids]

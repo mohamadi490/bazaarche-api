@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from starlette import status
 from core.security import get_current_user
-from db.database import get_db
+from core.database import get_db
 from sqlalchemy.orm import Session
 from crud.product import product_service
 from schemas.product import ProductBase, Product, ProductCreate, ProductUpdate, SimpleProduct, ProductList

@@ -1,11 +1,10 @@
+
+from .base import Base
 from sqlalchemy import Column, Table, ForeignKey, DateTime, Integer, String, Boolean
-from sqlalchemy.orm import relationship, DeclarativeBase
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
-class UserBase(DeclarativeBase):
-    pass
-
-class User(UserBase):
+class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -22,9 +21,9 @@ class User(UserBase):
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime, nullable=True)
     
-    # products = relationship("Product", back_populates="users", cascade="all, delete-orphan")
+    products = relationship("Product", back_populates="user")
 
-class Role(UserBase):
+class Role(Base):
     __tablename__ = 'roles'
     
     id = Column(Integer, primary_key=True, index=True)
@@ -36,7 +35,7 @@ class Role(UserBase):
     
     permissions = relationship("Permission", secondary="role_permission", back_populates="roles")
     
-class Permission(UserBase):
+class Permission(Base):
     __tablename__ = 'permissions'
     
     id = Column(Integer, primary_key=True, index=True)
@@ -48,7 +47,7 @@ class Permission(UserBase):
     roles = relationship("Role", secondary="role_permission", back_populates="permissions")
 
 # Association table for many-to-many relationship between Role and Permission
-role_permission = Table('role_permission', UserBase.metadata,
+role_permission = Table('role_permission', Base.metadata,
     Column('role_id', Integer, ForeignKey('roles.id', ondelete='CASCADE')),
     Column('permission_id', Integer, ForeignKey('permissions.id', ondelete='CASCADE'))
 )

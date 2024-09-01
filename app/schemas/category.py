@@ -7,11 +7,13 @@ from pydantic import BaseModel
 class CategoryBase(BaseModel):
     name: str
     slug: str
+    type: Optional[str]
     description: Optional[str] = None
     
 class SimpleCategory(BaseModel):
     name: str
     slug: str
+    type: Optional[str]
     parent_id:  Optional[int]
 
 class CategoryCreate(CategoryBase):

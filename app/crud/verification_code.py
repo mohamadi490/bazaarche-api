@@ -1,7 +1,6 @@
 from datetime import datetime
-from db.models.verification_code import VerificationCode as vc_model
+from models.verification_code import VerificationCode as vc_model
 from sqlalchemy.orm import Session
-
 
 class VerificationCodeService:
     

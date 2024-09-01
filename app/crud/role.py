@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 from schemas.pagination import Pagination
-from db.models.user import Permission, Role
+from models.user import Permission, Role
 from schemas.role import RoleBase
 from fastapi import HTTPException
 from sqlalchemy.orm import joinedload

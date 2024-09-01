@@ -1,15 +1,14 @@
 
 from datetime import datetime
-from fastapi import HTTPException, Query
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
-from db.models.collections import Category
+from models.collections import Category
 from schemas.pagination import Pagination
 from schemas.category import CategoryCreate
 
 
 class CategoryService:
-    
     def get_all(self, db: Session, page: int, size: int):
         query = db.query(Category).order_by(Category.created_at.desc())
         paginated_query, total_items, total_pages = Pagination.paginate_query(query, page, size)
@@ -27,7 +26,13 @@ class CategoryService:
         category_item = db.query(Category).filter(Category.slug == cat_in.slug).first()
         if category_item:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='لینک ارسالی تکراری می باشد')
-        db_category = Category(name=cat_in.name, slug=cat_in.slug, description=cat_in.description, parent_id=cat_in.parent_id)
+        db_category = Category(
+            name=cat_in.name,
+            slug=cat_in.slug,
+            type=cat_in.type,
+            description=cat_in.description,
+            parent_id=cat_in.parent_id
+        )
         db.add(db_category)
         db.commit()
         db.refresh(db_category)

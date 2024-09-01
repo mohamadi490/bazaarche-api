@@ -1,12 +1,9 @@
 import random
-from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from datetime import datetime, timedelta
+from .base import Base
 
-class VerificationBase(DeclarativeBase):
-    pass
-
-class VerificationCode(VerificationBase):
+class VerificationCode(Base):
     __tablename__ = 'verification_codes'
     
     id = Column(Integer, primary_key=True, index=True)

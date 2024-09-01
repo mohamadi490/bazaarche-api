@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from db.database import get_db
+from core.database import get_db
 from schemas.role import RoleBase
 from schemas.result import PaginationResult, Result
 from crud.role import role_service

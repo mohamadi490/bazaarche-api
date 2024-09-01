@@ -57,7 +57,7 @@ class Product(ProductBase):
     categories: Optional[List[SimpleCategory]]
     attributes: Optional[List[ProductAttribute]]
     variations: Optional[List[Variation]]
-    images: Optional[List[ProductImage]]
+    files: Optional[List[ProductImage]]
     user: SimpleUser
 
     class Config:
@@ -73,7 +73,7 @@ class ProductList(ProductBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     categories: Optional[List[SimpleCategory]]
-    images: Optional[List[ImageBase]]
+    files: Optional[List[ImageBase]]
     user: SimpleUser
 
     class Config:

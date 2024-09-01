@@ -1,11 +1,8 @@
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Index
-from sqlalchemy.orm import DeclarativeBase
+from .base import Base
 
-class FileBase(DeclarativeBase):
-    pass
-
-class File(FileBase):
+class File(Base):
     __tablename__ = 'files'
     
     id = Column(Integer, primary_key=True, index=True)

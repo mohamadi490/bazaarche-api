@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from crud.category import category_service
-from db.database import get_db
+from core.database import get_db
 from schemas.category import Category, CategoryBase, CategoryCreate
 from schemas.result import PaginationResult, Result
 from starlette import status
@@ -20,7 +20,7 @@ async def get_all(db: Session = Depends(get_db), page: int = Query(1, ge=1), siz
     return PaginationResult(isDone=True, data=items, pagination=pagination, message='عملیات با موفقیت انجام شد')
 
 
-@category_router.get('/{category_id}', response_model=Result[CategoryBase])
+@category_router.get('/{category_id}', response_model=Result[Category])
 async def get_category(category_id: int, db: Session = Depends(get_db)):
     data = category_service.get(db=db, category_id=category_id)
     return Result(isDone=True, data=data, message='عملیات با موفقیت انجام شد')

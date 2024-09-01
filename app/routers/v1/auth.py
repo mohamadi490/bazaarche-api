@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from core.security import create_access_token
 from core.utils import utils
 from crud.auth import auth_service
-from db.database import get_db
+from core.database import get_db
 from schemas.result import Result
 from schemas.auth import BaseAuth, LoginRequest, RegisterRequest, Token
 from starlette import status
