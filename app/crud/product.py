@@ -25,6 +25,7 @@ class ProductService:
             product.categories = [cat for cat in product.categories if cat.parent_id is None]
             if product.variations:
                 min_variation = min(product.variations, key=lambda var: var.final_price)
+                product.var_id = min_variation.id
                 product.sku = min_variation.sku
                 product.price = min_variation.price
                 product.final_price = min_variation.final_price

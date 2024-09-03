@@ -31,6 +31,7 @@ class ProductBase(BaseModel):
 class SimpleProduct(BaseModel):
     id: int
     name: str
+    slug: str
 
     class Config:
         orm_mode = True
@@ -78,3 +79,13 @@ class ProductList(ProductBase):
 
     class Config:
         orm_mode = True
+
+
+class ProductVariation(BaseModel):
+    id: int
+    sku: str
+    price: int
+    final_price: int
+    quantity: int
+    status: str
+    product: SimpleProduct
