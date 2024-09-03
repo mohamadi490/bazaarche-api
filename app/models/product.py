@@ -96,7 +96,7 @@ class Attribute(Base):
 class ProductAttribute(Base):
     __tablename__ = 'product_attributes'
     
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
     attribute_id = Column(Integer, ForeignKey('attributes.id', ondelete='CASCADE'), nullable=False)
     value = Column(String)
