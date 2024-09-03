@@ -44,7 +44,6 @@ class Product(Base):
     categories = relationship('Category', secondary="product_categories")
     tags = relationship('Tag', secondary="product_tags")
     files = relationship("File", back_populates="product")
-    cart_items = relationship("CartItem", back_populates="product")
     
     @declared_attr
     def files(cls):
@@ -81,6 +80,7 @@ class ProductVariation(Base):
     
     product = relationship("Product", back_populates="variations")
     product_attribute = relationship("ProductAttribute")
+    cart_items = relationship("CartItem", back_populates="variation")
 
 class Attribute(Base):
     __tablename__ = 'attributes'

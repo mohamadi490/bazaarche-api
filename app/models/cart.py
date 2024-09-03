@@ -22,9 +22,9 @@ class CartItem(Base):
     
     id = Column(Integer, primary_key=True, nullable=False, unique=True, autoincrement=True)
     cart_id = Column(Integer, ForeignKey("carts.id", ondelete="CASCADE"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    variation_id = Column(Integer, ForeignKey("product_variations.id", ondelete="CASCADE"), nullable=False)
     quantity = Column(Integer, nullable=False)
     total_price = Column(Float, nullable=False)
     
     cart = relationship("Cart", back_populates="cart_items")
-    product = relationship("Product", back_populates="cart_items")
+    variation = relationship("ProductVariation", back_populates="cart_items")
