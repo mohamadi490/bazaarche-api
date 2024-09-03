@@ -5,6 +5,7 @@ from .collections import Category, Tag
 from .file import File
 from .product import ProductType, InventoryStatus, Status, Product, ProductVariation, Attribute, ProductAttribute, product_categories, product_tags
 from .cart import Cart, CartItem
+from .address import Country, City, Address
 
 __all__ = [
     'User', 
@@ -25,5 +26,8 @@ __all__ = [
     'product_tags',
     'Cart',
     'CartItem',
+    'Country',
+    'City',
+    'Address',
     'Base'
 ] 
