@@ -9,7 +9,7 @@ class LoginRequest(BaseAuth):
     hasPassword: bool
 
 class RegisterRequest(BaseAuth):
-    password: str = Field(min_length=8)
+    password: str
     
 class Token(BaseModel):
     access_token: str

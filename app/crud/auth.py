@@ -47,7 +47,7 @@ class AuthService:
         return token_data
     
     def register(self, db: Session, register_in: RegisterRequest):
-        verification_code = vc_service.get_valid_code(db, register_in.username, register_in.password)
+        verification_code = vc_service.get_valid_code(db=db, phone_number=register_in.username, code=register_in.password)
         if not verification_code:
             raise HTTPException(status_code=401, detail="کد پیدا نشد")
         # mark the code as used

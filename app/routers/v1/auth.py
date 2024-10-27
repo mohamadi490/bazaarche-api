@@ -57,5 +57,5 @@ def login(login_in: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/register", response_model=Result, status_code=status.HTTP_200_OK)
 def register(register_in: RegisterRequest, db: Session = Depends(get_db)):
     username_type = utils.get_username_type(register_in.username)
-    token_data = auth_service.register(db, register_in, username_type)
+    token_data = auth_service.register(db, register_in)
     return Result(isDone=True, data=token_data, message='درخواست با موفقیت انجام شد')
