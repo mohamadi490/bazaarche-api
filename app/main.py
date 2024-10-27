@@ -6,6 +6,7 @@ from routers.v1.category import category_router
 from routers.v1.product import product_router
 from routers.v1.media import media_router
 from routers.v1.cart import cart_router
+from routers.v1.address import address_router
 
 # Base.metadata.create_all(bind=engine)
 
@@ -18,3 +19,4 @@ app.include_router(category_router, prefix="/api/v1")
 app.include_router(product_router, prefix="/api/v1")
 app.include_router(media_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
+app.include_router(address_router, prefix="/api/v1")
