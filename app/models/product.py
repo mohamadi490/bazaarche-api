@@ -72,6 +72,7 @@ class ProductVariation(Base):
     price = Column(Numeric(20, 0), nullable=False)
     final_price = Column(Numeric(20, 0), nullable=False)
     quantity = Column(Integer, default=0)
+    weight = Column(Integer, default=0)
     low_stock_threshold = Column(Integer, default=5)
     status = Column(Enum(InventoryStatus), nullable=False)
     created_at = Column(DateTime, default=datetime.now)
