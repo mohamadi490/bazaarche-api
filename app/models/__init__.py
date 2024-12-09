@@ -6,6 +6,7 @@ from .file import File
 from .product import ProductType, InventoryStatus, Status, Product, ProductVariation, Attribute, ProductAttribute, product_categories, product_tags
 from .cart import Cart, CartItem
 from .address import Country, City, Address
+from .shipping import ShippingMethod, ShippingArea
 
 __all__ = [
     'User', 
@@ -29,5 +30,7 @@ __all__ = [
     'Country',
     'City',
     'Address',
+    'ShippingMethod',
+    'ShippingArea',
     'Base'
 ] 
