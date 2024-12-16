@@ -10,12 +10,12 @@ from schemas.result import Result
 from schemas.auth import BaseAuth, LoginRequest, RegisterRequest, Token
 from starlette import status
 
-router = APIRouter(
+auth_router = APIRouter(
     prefix="/auth",
     tags=["auth"]
 )
 
-@router.post('/panel', response_model=Token)
+@auth_router.post('/panel', response_model=Token)
 def panel_login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = auth_service.authenticate_user(form_data.username, form_data.password, db)
     if not user:
@@ -24,7 +24,7 @@ def panel_login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     return {'access_token': token, 'token_type': 'bearer'}
 
 
-@router.post("/verify", response_model=Result)
+@auth_router.post("/verify", response_model=Result)
 def verify(auth_validate: BaseAuth, db: Session = Depends(get_db)):
     username_type = utils.get_username_type(auth_validate.username)
     if not username_type:
@@ -39,7 +39,7 @@ def verify(auth_validate: BaseAuth, db: Session = Depends(get_db)):
     return Result(isDone=True, data=data, message='درخواست با موفقیت انجام شد')
 
 
-@router.post("/send_code", response_model=Result, status_code=status.HTTP_200_OK)
+@auth_router.post("/send_code", response_model=Result, status_code=status.HTTP_200_OK)
 def send_code(phone_number: str, db: Session = Depends(get_db)):
     response = auth_service.send_code(db, phone_number)
     if not response:
@@ -47,14 +47,14 @@ def send_code(phone_number: str, db: Session = Depends(get_db)):
     return Result(isDone=True, message="پیام با موفقیت ارسال شد")
 
 
-@router.post("/login", response_model=Result, status_code=status.HTTP_200_OK)
+@auth_router.post("/login", response_model=Result, status_code=status.HTTP_200_OK)
 def login(login_in: LoginRequest, db: Session = Depends(get_db)):
     username_type = utils.get_username_type(login_in.username)
     user = auth_service.login(db, login_in, username_type)
     return Result(isDone=True, data=user, message='درخواست با موفقیت انجام شد')
 
 
-@router.post("/register", response_model=Result, status_code=status.HTTP_200_OK)
+@auth_router.post("/register", response_model=Result, status_code=status.HTTP_200_OK)
 def register(register_in: RegisterRequest, db: Session = Depends(get_db)):
     username_type = utils.get_username_type(register_in.username)
     token_data = auth_service.register(db, register_in)
