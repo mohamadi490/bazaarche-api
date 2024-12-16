@@ -7,6 +7,7 @@ from .product import ProductType, InventoryStatus, Status, Product, ProductVaria
 from .cart import Cart, CartItem
 from .address import Country, City, Address
 from .shipping import ShippingMethod, ShippingArea
+from .setting import Setting
 
 __all__ = [
     'User', 
@@ -32,5 +33,6 @@ __all__ = [
     'Address',
     'ShippingMethod',
     'ShippingArea',
+    'Setting',
     'Base'
 ] 
