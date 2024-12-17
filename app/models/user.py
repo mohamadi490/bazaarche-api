@@ -23,7 +23,8 @@ class User(Base):
     
     products = relationship("Product", back_populates="user")
     carts = relationship("Cart", back_populates="user")
-    addresses = relationship("Address", back_populates='user')
+    addresses = relationship("Address", back_populates="user")
+    orders = relationship("Order", back_populates="customer")
 
 class Role(Base):
     __tablename__ = 'roles'

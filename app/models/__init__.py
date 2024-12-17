@@ -8,6 +8,8 @@ from .cart import Cart, CartItem
 from .address import Country, City, Address
 from .shipping import ShippingMethod, ShippingArea
 from .setting import Setting
+from .order import Order, OrderItem, OrderStatus
+from .transaction import Transaction
 
 __all__ = [
     'User', 
@@ -34,5 +36,9 @@ __all__ = [
     'ShippingMethod',
     'ShippingArea',
     'Setting',
+    'OrderStatus',
+    'Order',
+    'OrderItem',
+    'Transaction',
     'Base'
 ] 
