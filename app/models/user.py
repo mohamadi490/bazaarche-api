@@ -1,6 +1,6 @@
 
 from .base import Base
-from sqlalchemy import Column, Table, ForeignKey, DateTime, Integer, String, Boolean
+from sqlalchemy import Column, Numeric, Table, ForeignKey, DateTime, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -17,6 +17,7 @@ class User(Base):
     password = Column(String)
     is_active = Column(Boolean, default=True)
     birth_date = Column(DateTime, nullable=True)
+    balance = Column(Numeric(20, 0), default=0)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime, nullable=True)
@@ -25,6 +26,7 @@ class User(Base):
     carts = relationship("Cart", back_populates="user")
     addresses = relationship("Address", back_populates="user")
     orders = relationship("Order", back_populates="customer")
+    transactions = relationship("Transaction", back_populates="user")
 
 class Role(Base):
     __tablename__ = 'roles'
