@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
+from core.exceptions import CustomHTTPException
 from models.cart import Cart, CartItem
 from models.product import ProductVariation
 from starlette import status
@@ -7,7 +8,7 @@ from starlette import status
 class CartService:
     
     def get_cart(self, db: Session, user_id: int) -> Cart:
-        return db.query(Cart).options(joinedload(Cart.cart_items)).filter(Cart.user_id == user_id).first()
+        return db.query(Cart).filter(Cart.user_id == user_id).options(joinedload(Cart.cart_items)).first()
     
     def create_cart(self, db: Session, user_id: int) -> Cart:
         new_cart = Cart(user_id=user_id, total_amount=0.0)  # Initialize total_amount to 0
@@ -90,6 +91,53 @@ class CartService:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='متغیر انتخابی پیدا نشد')
         else:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='شناسه متغیر اجباری می باشد')
+    
+    def validate(self, db: Session, user_id: int):
+
+        cart = db.query(Cart).options(joinedload(Cart.cart_items)).filter(Cart.user_id == user_id).first()
+        
+        if not cart:
+            raise CustomHTTPException(status_code=404, message="Cart not found")
+
+        # Fetch all product variations in one query
+        variation_ids = [item.variation_id for item in cart.cart_items]
+        product_variations = db.query(ProductVariation).filter(ProductVariation.id.in_(variation_ids)).all()
+        variation_map = {pv.id: pv for pv in product_variations}
+
+        unvalidated_items = []
+        for item in cart.cart_items:
+            product_variation = variation_map.get(item.variation_id)
+            if not product_variation:
+                unvalidated_items.append({
+                    "product_id": None,
+                    "product_name": None,
+                    "variation_id": item.variation_id,
+                    "message": "Product Variation not found"
+                })
+                continue
+
+            if product_variation.quantity < item.quantity:
+                unvalidated_items.append({
+                    "product_id": product_variation.product_id,
+                    "product_name": product_variation.product.name,
+                    "variation_id": product_variation.id,
+                    "message": "Not enough stock"
+                })
+
+            if product_variation.price != item.total_price / item.quantity:
+                unvalidated_items.append({
+                    "product_id": product_variation.product_id,
+                    "product_name": product_variation.product.name,
+                    "variation_id": product_variation.id,
+                    "message": "Price changed"
+                })
+        
+        if len(unvalidated_items) > 0:
+            raise CustomHTTPException(status_code=400, message="Cart validation failed", data={"errors": unvalidated_items})
+        
+        return True
+        
+        
 
 
 # Initialize the cart service
