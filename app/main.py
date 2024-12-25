@@ -10,6 +10,8 @@ from routers.v1.address import address_router
 from routers.v1.shipping import shipping_router
 from routers.v1.setting import setting_router
 from routers.v1.order import order_router
+from routers.v1.transaction import transaction_router
+
 # Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -25,3 +27,4 @@ app.include_router(address_router, prefix="/api/v1")
 app.include_router(shipping_router, prefix="/api/v1")
 app.include_router(setting_router, prefix="/api/v1")
 app.include_router(order_router, prefix="/api/v1")
+app.include_router(transaction_router, prefix="/api/v1")
