@@ -14,7 +14,7 @@ class Transaction(Base):
     transaction_type = Column(Enum("order", "wallet_deposit", "wallet_withdraw", name="transaction_type"), nullable=False)
     description = Column(String, nullable=True)
     amount = Column(Numeric(20,0), nullable=False)
-    status = Column(Enum("success", "failed", "pending", name="transaction_status"), default="pending")
+    status = Column(Enum("success", "failed", "pending", "canceled", name="transaction_status"), default="pending")
     res_number = Column(String, nullable=True)
     ref_id = Column(Integer, nullable=True)
     fee = Column(Integer, nullable=True)

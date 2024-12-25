@@ -10,4 +10,5 @@ class TransactionType(Enum):
 class TransactionStatus(Enum):
     Success = "success"
     Failed = "failed"
+    Canceled = "canceled"
     Pending = "pending"
