@@ -17,9 +17,9 @@ async def get_all(db: Session = Depends(get_db)):
     data = setting_service.get_all(db)
     return Result(isDone=True, data=data, message='عملیات با موفقیت انجام شد')
 
-@setting_router.get('/{setting_id}', response_model=Result[SettingItem])
-async def get(setting_id: int, db: Session = Depends(get_db)):
-    data = setting_service.get(db, setting_id)
+@setting_router.get('/{setting_key}', response_model=Result[SettingItem])
+async def get(setting_key: str, db: Session = Depends(get_db)):
+    data = setting_service.get(db, setting_key)
     return Result(isDone=True, data=data, message='عملیات با موفقیت انجام شد')
 
 @setting_router.post('/create', response_model=Result[None], status_code=status.HTTP_201_CREATED)

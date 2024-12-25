@@ -13,8 +13,8 @@ class SettingService:
                 setting.value = json.loads(setting.value)
         return settings
     
-    def get(self, db: Session, setting_id: int):
-        setting = db.query(Setting).filter_by(id=setting_id).first()
+    def get(self, db: Session, setting_key: str):
+        setting = db.query(Setting).filter_by(key=setting_key).first()
         if not setting:
             raise HTTPException(status_code=404, detail='setting item not found!')
         if isinstance(setting.value, str):
