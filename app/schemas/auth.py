@@ -5,7 +5,7 @@ class BaseAuth(BaseModel):
     username: str = Field(min_length=3, max_length=50)
 
 class LoginRequest(BaseAuth):
-    password: str = Field(min_length=8)
+    password: str
     hasPassword: bool
 
 class RegisterRequest(BaseAuth):

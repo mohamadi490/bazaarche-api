@@ -18,8 +18,14 @@ class VerificationCode(Base):
     def create_code(cls, db, phone_number:str):
         code = cls.generate_code()
         expires_at = datetime.now() + timedelta(minutes=10)
-        verification_code = cls(phone_number=phone_number, code=code, expires_at=expires_at)
-        db.add(verification_code)
+        verification_code = db.query(VerificationCode).filter_by(phone_number=phone_number).first()
+        if verification_code:
+            verification_code.is_used = False
+            verification_code.code = code
+            verification_code.expires_at = expires_at
+        else:
+            verification_code = cls(phone_number=phone_number, code=code, expires_at=expires_at)
+            db.add(verification_code)
         db.commit()
         db.refresh(verification_code)
         return verification_code

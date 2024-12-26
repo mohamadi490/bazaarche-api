@@ -42,6 +42,7 @@ class AuthService:
             verification_code = vc_service.get_valid_code(db, login_in.username, login_in.password)
             if not verification_code:
                 raise HTTPException(status_code=401, detail="کد پیدا نشد")
+            vc_service.mark_code_as_used(db, verification_code.id)
         # make a jwt token and send to user
         token_data = create_access_token(user.id)
         return token_data
