@@ -11,6 +11,7 @@ class CategoryBase(BaseModel):
     description: Optional[str] = None
     
 class SimpleCategory(BaseModel):
+    id: int
     name: str
     slug: str
     type: Optional[str]

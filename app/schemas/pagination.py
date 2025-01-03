@@ -1,5 +1,11 @@
+from typing import Optional
+from fastapi import Query
 from pydantic import BaseModel
 
+
+class paginationConfig(BaseModel):
+    page: int = Query(1, ge=1)
+    size: Optional[int] = Query(10, ge=1)
 
 class Pagination(BaseModel):
     page: int
