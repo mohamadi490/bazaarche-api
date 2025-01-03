@@ -20,27 +20,20 @@ async def get_cart(db: Session = Depends(get_db), current_user: str = Depends(ge
 
 @cart_router.post('/add', response_model=Result[Cart])
 async def add_cart_item(variation_id: int, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
-    item = cart_service.add_cart_item(db=db, current_user=current_user, variation_id=variation_id)
-    return Result(isDone=True, data=item, message='عملیات با موفقیت انجام شد')
+    cart = cart_service.add_cart_item(db=db, current_user=current_user, variation_id=variation_id)
+    return Result(isDone=True, data=cart, message='عملیات با موفقیت انجام شد')
 
 @cart_router.post('/update', response_model=Result[Cart])
 async def update_cart_item(cart_item_id: int, operation: str, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
     cart = cart_service.update_cart_item(db=db, item_id=cart_item_id, operation=operation)
     return Result(isDone=True, data=cart, message='عملیات با موفقیت انجام شد')
 
-@cart_router.delete('/delete', response_model=Result)
+@cart_router.delete('/delete', response_model=Result[None])
 async def delete_cart_item(cart_item_id: int, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
-    cart = cart_service.delete_cart_item(db=db, item_id=cart_item_id)
-    if cart:
-        return Result(isDone=True, data=cart ,message='عملیات با موفقیت انجام شد')
-    else:
-        return Result(isDone=False, message='آیتم موجود نیست')
+    cart_service.delete_cart_item(db=db, item_id=cart_item_id)
+    return Result(isDone=True, data=None ,message='عملیات با موفقیت انجام شد')
 
-@cart_router.delete('/delete_all', response_model=Result)
+@cart_router.delete('/delete_all', response_model=Result[None])
 async def delete_cart_items(db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
-    cart = cart_service.delete_cart_items(db=db, current_user=current_user)
-    if cart:
-        cart.created_at = cart.created_at.isoformat()
-        return Result(isDone=True, data=cart, message='عملیات با موفقیت انجام شد')
-    else:
-        return Result(isDone=False, message='سبد خریدی برای این کاربر پیدا نشد')
+    cart_service.delete_cart_items(db=db, current_user=current_user)
+    return Result(isDone=True, data=None, message='عملیات با موفقیت انجام شد')

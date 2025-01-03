@@ -8,7 +8,7 @@ class CartItem(BaseModel):
     id: int
     variation: ProductVariation
     quantity: int
-    total_price: float
+    total_price: int
 
 class Cart(BaseModel):
     id: int
