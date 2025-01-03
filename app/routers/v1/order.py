@@ -26,13 +26,13 @@ async def get_order(order_id: int, db: Session = Depends(get_db), current_user: 
     return Result(isDone=True, data=data, message='عملیات با موفقیت انجام شد')
 
 @order_router.post('/create', response_model=Result[None], status_code=status.HTTP_201_CREATED)
-async def create_order(db: Session = Depends(get_db)):
-    order_service.create(db=db, current_user=1)
+async def create_order(db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
+    order_service.create(db=db, current_user=current_user)
     return Result(isDone=True, data=None, message='سفارش با موفقیت ایجاد شد')
 
 @order_router.put('/update', response_model=Result[None], status_code=status.HTTP_200_OK)
-async def update_order(data: UpdateOrder, db: Session = Depends(get_db)):
-    order_service.update(db=db, data=data, current_user=1)
+async def update_order(data: UpdateOrder, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
+    order_service.update(db=db, data=data, current_user=current_user)
     return Result(isDone=True, data=None, message='سفارش با موفقیت ویرایش شد')
 
 @order_router.delete('/delete/{order_id}', response_model=Result[None], status_code=status.HTTP_200_OK)

@@ -3,6 +3,7 @@ from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, Numeric, Str
 from sqlalchemy.orm import relationship
 from .base import Base
 import enum
+import json
 
 class OrderStatus(enum.Enum):
     PENDING = "pending"
@@ -16,8 +17,8 @@ class Order(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    address_id = Column(Integer, ForeignKey("addresses.id"), nullable=False)
-    shipping_id = Column(Integer, ForeignKey("shipping_methods.id"), nullable=False)
+    address_id = Column(Integer, ForeignKey("addresses.id"), nullable=True)
+    shipping_id = Column(Integer, ForeignKey("shipping_methods.id"), nullable=True)
     shipping_cost = Column(Numeric(20,0), default=0)
     tax_amount = Column(Numeric(20,0), default=0)
     order_total = Column(Numeric(20,0), nullable=False)

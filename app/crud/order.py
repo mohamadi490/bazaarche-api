@@ -43,10 +43,10 @@ class OrderService:
             order_id=order_id,
             product_id=product.id,
             product_name=product.name,
-            product_metadata=cart_item.variation,
+            product_metadata=json.dumps(cart_item.variation.id),
             quantity=cart_item.variation.quantity,
-            unit_price=cart_item.variation.unit_price,
-            total_price=cart_item.variation.unit_price * cart_item.variation.quantity,
+            unit_price=cart_item.variation.price,
+            total_price=cart_item.variation.price * cart_item.variation.quantity,
         )
         return order_item
     
