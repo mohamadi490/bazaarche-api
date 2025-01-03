@@ -1,12 +1,13 @@
 from fastapi import HTTPException
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from models.file import File
-from models.product import Product, ProductAttribute, ProductVariation
+from models.product import Attribute, Product, ProductAttribute, ProductType, ProductVariation, Status
 from models.collections import Category
 from sqlalchemy.orm import joinedload
 from models.user import User
 from schemas.pagination import Pagination
-from schemas.product import ProductCreate, ProductUpdate
+from schemas.product import ProductConfig, ProductCreate, ProductUpdate
 from starlette import status
 
 
@@ -34,7 +35,69 @@ class ProductService:
             
         pagination = Pagination(page=page, size=size, total_items=total_items, total_pages=total_pages)
         return items, pagination
+    
+    def get_list(self, db: Session, product_config: ProductConfig):
+    
+        query = db.query(
+            Product,
+            ProductVariation.id.label('var_id'),
+            ProductVariation.price,
+            ProductVariation.final_price, 
+            ProductVariation.quantity, 
+            ProductVariation.status.label('var_status')
+            ).join(ProductVariation).options(
+                joinedload(Product.categories).load_only(Category.id, Category.name,Category.slug, Category.parent_id),
+                joinedload(Product.files)
+            ).filter(Product.status == Status.PUBLISHED)
         
+        # Apply filters
+        if product_config.categories:
+            query = query.filter(and_(*[Product.categories.any(Category.id == cat_id) for cat_id in product_config.categories]))
+        
+        if product_config.price_min is not None:
+            query = query.filter(ProductVariation.final_price >= product_config.price_min)
+        
+        if product_config.price_max is not None:
+            query = query.filter(ProductVariation.final_price <= product_config.price_max)
+        
+        # Order by
+        if product_config.order_by == 'newest':
+            query = query.order_by(Product.created_at.desc())
+        elif product_config.order_by == 'expensive':
+            query = query.order_by(ProductVariation.final_price.desc())
+        elif product_config.order_by == 'cheapest':
+            query = query.order_by(ProductVariation.final_price)
+        
+        # Paginate
+        paginated_query, total_items, total_pages = Pagination.paginate_query(query, product_config.paginate.page, product_config.paginate.size)
+        items = paginated_query.all()
+        
+        # Convert each product to ProductList schema
+        product_lists = [
+            {
+                'id': item.Product.id,
+                'name': item.Product.name,
+                'slug': item.Product.slug,
+                'description': item.Product.description,
+                'featured': item.Product.featured,
+                'categories': item.Product.categories,
+                'thumbnail': next((file for file in item.Product.files if file.is_thumbnail), None),
+                'var_id': item.var_id,
+                'price': item.price,
+                'final_price': item.final_price,
+                'quantity': item.quantity,
+                'var_status': item.var_status,
+            } for item in items
+        ]
+        
+        pagination = Pagination(
+            page=product_config.paginate.page,
+            size=product_config.paginate.size,
+            total_items=total_items,
+            total_pages=total_pages
+        )
+        return product_lists, pagination
+    
     
     def get(self, db: Session, product_slug: str):
         product_item = db.query(Product).options(
@@ -59,7 +122,7 @@ class ProductService:
         product = Product(
             name=product_in.name,
             slug=product_in.slug,
-            type=product_in.type,
+            type=ProductType.VARIABLE if len(product_in.variations) > 1 else ProductType.SIMPLE,
             user_id=int(current_user),
             featured=product_in.featured,
             description=product_in.description,
@@ -103,6 +166,7 @@ class ProductService:
                     final_price=var.final_price,
                     quantity=var.quantity,
                     low_stock_threshold=var.low_stock_threshold,
+                    weight=var.weight,
                     status=var.status
                 )
                 product.variations.append(variation)
@@ -120,7 +184,7 @@ class ProductService:
         
         product_db.name = product_in.name
         product_db.slug = product_in.slug
-        product_db.type = product_in.type
+        product_db.type = ProductType.VARIABLE if len(product_in.variations) > 1 else ProductType.SIMPLE
         product_db.featured = product_in.featured
         product_db.description = product_in.description
         product_db.body = product_in.body
@@ -185,6 +249,7 @@ class ProductService:
                 var_item.cost_price = var.cost_price
                 var_item.quantity = var.quantity
                 var_item.low_stock_threshold = var.low_stock_threshold
+                var_item.weight = var.weight
                 var_item.status = var.status
             else:
                 variable = ProductVariation(
@@ -194,6 +259,7 @@ class ProductService:
                     cost_price = var.cost_price,
                     quantity = var.quantity,
                     low_stock_threshold = var.low_stock_threshold,
+                    weight = var.weight,
                     status = var.status
                 )
                 product_db.variations.append(variable)
@@ -211,5 +277,17 @@ class ProductService:
         
         db.delete(product_db)
         db.commit()
+    
+    
+    def get_attributes(self, db: Session):
+        attributes = db.query(Attribute).all()
+        return attributes
+    
+    def create_attribute(self, db: Session, attribute_name: str):
+        attribute = Attribute(name=attribute_name)
+        db.add(attribute)
+        db.commit()
+        db.refresh(attribute)
+        return attribute
 
 product_service = ProductService()

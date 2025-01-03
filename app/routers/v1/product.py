@@ -4,7 +4,7 @@ from core.security import get_current_user
 from core.database import get_db
 from sqlalchemy.orm import Session
 from crud.product import product_service
-from schemas.product import ProductBase, Product, ProductCreate, ProductUpdate, SimpleProduct, ProductList
+from schemas.product import AttributeSchema, ProductBase, Product, ProductCreate, ProductUpdate, SimpleProduct, ProductList
 from schemas.result import PaginationResult, Result
 from typing import List
 
@@ -14,6 +14,18 @@ admin_product_router = APIRouter(
     prefix='/products',
     tags=['admin/products']
 )
+
+@admin_product_router.get("/attributes", response_model=Result[List[AttributeSchema]], status_code=status.HTTP_200_OK)
+async def get_attributes(db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
+    data = product_service.get_attributes(db)
+    return Result(isDone=True, data=data, message='عملیات با موفقیت انجام شد!')
+
+
+@admin_product_router.post("/attributes/create", response_model=Result[None], status_code=status.HTTP_201_CREATED)
+async def create_attribute(attribute_name: str, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
+    product_service.create_attribute(db=db, attribute_name=attribute_name)
+    return Result(isDone=True, data=None, message='ویژگی با موفقیت ایجاد شد')
+
 
 @admin_product_router.get("/", response_model=PaginationResult[List[ProductList]], status_code=status.HTTP_200_OK)
 async def get_products(db: Session = Depends(get_db), page: int = Query(1, ge=1), size: int = Query(10, ge=1), current_user: UserBase = Depends(get_current_user)):

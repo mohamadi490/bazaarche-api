@@ -4,7 +4,7 @@ from core.security import get_current_user
 from core.database import get_db
 from sqlalchemy.orm import Session
 from crud.product import product_service
-from schemas.product import ProductBase, Product, ProductCreate, ProductUpdate, SimpleProduct, ProductList
+from schemas.product import ProductBase, Product, ProductConfig, ProductCreate, ProductUpdate, Products, SimpleProduct, ProductList
 from schemas.result import PaginationResult, Result
 from typing import List
 
@@ -15,9 +15,9 @@ product_router = APIRouter(
     tags=['products']
 )
 
-@product_router.get("/", response_model=PaginationResult[List[ProductList]], status_code=status.HTTP_200_OK)
-async def get_products(db: Session = Depends(get_db), page: int = Query(1, ge=1), size: int = Query(10, ge=1)):
-    items, pagination = product_service.get_all(db, page, size)
+@product_router.get("/", response_model=PaginationResult[List[Products]], status_code=status.HTTP_200_OK)
+async def get_products(product_config: ProductConfig, db: Session = Depends(get_db)):
+    items, pagination = product_service.get_list(db, product_config)
     return PaginationResult(isDone=True, data=items, pagination=pagination, message='عملیات با موفقیت انجام شد!')
 
 

@@ -4,6 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 from schemas.category import SimpleCategory
 from schemas.media import Image, ImageBase, ProductImage, ProductImage
+from schemas.pagination import paginationConfig
 from schemas.user import SimpleUser
 from schemas.attribute import *
 
@@ -12,6 +13,7 @@ class VariationBase(BaseModel):
     cost_price: int
     price: int
     final_price: int
+    weight: Optional[int] = None
     quantity: int
     low_stock_threshold: int
     status: str
@@ -22,11 +24,8 @@ class Variation(VariationBase):
 class ProductBase(BaseModel):
     name: str
     slug: str
-    type: str
     description: Optional[str] = None
-    body: Optional[str] = None
     featured: Optional[bool] = False
-    status: str
 
 class SimpleProduct(BaseModel):
     id: int
@@ -37,12 +36,15 @@ class SimpleProduct(BaseModel):
         orm_mode = True
 
 class ProductCreate(ProductBase):
+    body: Optional[str] = None
     category_ids: List[int]
     attributes: List[ProductAttributeCreate]
     images: List[ImageBase]
     variations: List[VariationBase]
+    status: str
 
 class ProductUpdate(ProductBase):
+    body: Optional[str] = None
     category_ids: List[int]
     attributes: List[ProductAttributeUpdate]
     images: List[ProductImage]
@@ -50,9 +52,12 @@ class ProductUpdate(ProductBase):
     deleted_image_ids: List[int]
     deleted_attr_ids: List[int]
     deleted_var_ids: List[int]
+    status: str
 
 class Product(ProductBase):
     id: Optional[int]
+    type: str
+    body: Optional[str] = None
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     categories: Optional[List[SimpleCategory]]
@@ -60,12 +65,14 @@ class Product(ProductBase):
     variations: Optional[List[Variation]]
     files: Optional[List[ProductImage]]
     user: SimpleUser
+    status: str
 
     class Config:
         orm_mode = True
 
 class ProductList(ProductBase):
     id: Optional[int]
+    type: str
     sku: Optional[str] = ''
     price: Optional[int] = 0
     final_price: Optional[int] = 0
@@ -76,10 +83,20 @@ class ProductList(ProductBase):
     categories: Optional[List[SimpleCategory]]
     files: Optional[List[ImageBase]]
     user: SimpleUser
+    status: str
 
     class Config:
         orm_mode = True
 
+class Products(ProductBase):
+    id: int
+    thumbnail: Optional[ImageBase] = None
+    price: Optional[int] = 0
+    final_price: Optional[int] = 0
+    quantity: Optional[int] = 0
+    var_id: int
+    var_status: Optional[str] = ''
+    categories: Optional[List[SimpleCategory]]
 
 class ProductVariation(BaseModel):
     id: int
@@ -89,3 +106,16 @@ class ProductVariation(BaseModel):
     quantity: int
     status: str
     product: SimpleProduct
+
+
+class AttributeSchema(BaseModel):
+    id: int
+    name: str
+    
+
+class ProductConfig(BaseModel):
+    categories: Optional[list[int]] = None
+    order_by: str = 'newest'
+    price_min: Optional[int] = None
+    price_max: Optional[int] = None
+    paginate: paginationConfig
