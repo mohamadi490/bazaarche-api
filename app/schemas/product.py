@@ -11,8 +11,8 @@ from schemas.attribute import *
 class VariationBase(BaseModel):
     sku: str
     cost_price: int
-    price: int
-    final_price: int
+    unit_price: int
+    sales_price: int
     weight: Optional[int] = None
     quantity: int
     low_stock_threshold: int
@@ -74,8 +74,8 @@ class ProductList(ProductBase):
     id: Optional[int]
     type: str
     sku: Optional[str] = ''
-    price: Optional[int] = 0
-    final_price: Optional[int] = 0
+    unit_price: Optional[int] = 0
+    sales_price: Optional[int] = 0
     quantity: Optional[int] = 0
     var_status: Optional[str] = ''
     created_at: Optional[datetime]
@@ -91,8 +91,8 @@ class ProductList(ProductBase):
 class Products(ProductBase):
     id: int
     thumbnail: Optional[ImageBase] = None
-    price: Optional[int] = 0
-    final_price: Optional[int] = 0
+    unit_price: Optional[int] = 0
+    sales_price: Optional[int] = 0
     quantity: Optional[int] = 0
     var_id: int
     var_status: Optional[str] = ''
@@ -101,8 +101,8 @@ class Products(ProductBase):
 class ProductVariation(BaseModel):
     id: int
     sku: str
-    price: int
-    final_price: int
+    unit_price: int
+    sales_price: int
     quantity: int
     status: str
     product: SimpleProduct

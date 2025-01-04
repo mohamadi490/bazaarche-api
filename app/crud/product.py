@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import HTTPException
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -25,11 +26,11 @@ class ProductService:
         for product in items:
             product.categories = [cat for cat in product.categories if cat.parent_id is None]
             if product.variations:
-                min_variation = min(product.variations, key=lambda var: var.final_price)
+                min_variation = min(product.variations, key=lambda var: var.sales_price)
                 product.var_id = min_variation.id
                 product.sku = min_variation.sku
-                product.price = min_variation.price
-                product.final_price = min_variation.final_price
+                product.unit_price = min_variation.unit_price
+                product.sales_price = min_variation.sales_price
                 product.quantity = min_variation.quantity
                 product.var_status = min_variation.status
             
@@ -41,8 +42,8 @@ class ProductService:
         query = db.query(
             Product,
             ProductVariation.id.label('var_id'),
-            ProductVariation.price,
-            ProductVariation.final_price, 
+            ProductVariation.unit_price,
+            ProductVariation.sales_price, 
             ProductVariation.quantity, 
             ProductVariation.status.label('var_status')
             ).join(ProductVariation).options(
@@ -55,18 +56,18 @@ class ProductService:
             query = query.filter(and_(*[Product.categories.any(Category.id == cat_id) for cat_id in product_config.categories]))
         
         if product_config.price_min is not None:
-            query = query.filter(ProductVariation.final_price >= product_config.price_min)
+            query = query.filter(ProductVariation.sales_price >= product_config.price_min)
         
         if product_config.price_max is not None:
-            query = query.filter(ProductVariation.final_price <= product_config.price_max)
+            query = query.filter(ProductVariation.sales_price <= product_config.price_max)
         
         # Order by
         if product_config.order_by == 'newest':
             query = query.order_by(Product.created_at.desc())
         elif product_config.order_by == 'expensive':
-            query = query.order_by(ProductVariation.final_price.desc())
+            query = query.order_by(ProductVariation.sales_price.desc())
         elif product_config.order_by == 'cheapest':
-            query = query.order_by(ProductVariation.final_price)
+            query = query.order_by(ProductVariation.sales_price)
         
         # Paginate
         paginated_query, total_items, total_pages = Pagination.paginate_query(query, product_config.paginate.page, product_config.paginate.size)
@@ -83,8 +84,8 @@ class ProductService:
                 'categories': item.Product.categories,
                 'thumbnail': next((file for file in item.Product.files if file.is_thumbnail), None),
                 'var_id': item.var_id,
-                'price': item.price,
-                'final_price': item.final_price,
+                'unit_price': item.unit_price,
+                'sales_price': item.sales_price,
                 'quantity': item.quantity,
                 'var_status': item.var_status,
             } for item in items
@@ -113,6 +114,13 @@ class ProductService:
         
         return product_item
     
+    def get_by_id(self, db: Session, product_id: int):
+        product_item = db.query(Product).filter(Product.id == product_id).first()
+        
+        if not product_item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر پیدا نشد')
+        
+        return product_item
     
     def create(self, db: Session, product_in: ProductCreate, current_user: str):
         product_item = db.query(Product).filter(Product.slug == product_in.slug).first()
@@ -159,11 +167,15 @@ class ProductService:
         # Add variations
         if product_in.variations:
             for var in product_in.variations:
+                # check sku variation
+                variation = db.query(ProductVariation).filter(ProductVariation.sku == var.sku).first()
+                if variation:
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'متفیر با شناسه {var.sku} تکراری می باشد')
                 variation = ProductVariation(
                     sku=var.sku,
                     cost_price=var.cost_price,
-                    price=var.price,
-                    final_price=var.final_price,
+                    unit_price=var.unit_price,
+                    sales_price=var.sales_price,
                     quantity=var.quantity,
                     low_stock_threshold=var.low_stock_threshold,
                     weight=var.weight,
@@ -181,6 +193,11 @@ class ProductService:
         product_db = db.query(Product).filter(Product.slug == product_slug).first()
         if not product_db:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر پیدا نشد')
+        
+        if product_in.slug != product_slug:
+            existing_product = db.query(Product.id).filter(Product.slug == product_in.slug).first()
+            if existing_product and existing_product.id != product_db.id:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='لینک ارسالی تکراری می باشد')
         
         product_db.name = product_in.name
         product_db.slug = product_in.slug
@@ -241,11 +258,12 @@ class ProductService:
         variations = {var.id: var for var in product_db.variations}
         for var in product_in.variations:
             if var.id in variations:
-                # Update existing variation
+                # Retrieve and update the existing variation
                 var_item = db.query(ProductVariation).filter(ProductVariation.id == var.id).first()
-                var_item.sku = var.sku
-                var_item.price = var.price
-                var_item.final_price = var.final_price
+                # SKU is not updated as it's a unique identifier and should not change
+                # var_item.sku = var.sku
+                var_item.unit_price = var.unit_price
+                var_item.sales_price = var.sales_price
                 var_item.cost_price = var.cost_price
                 var_item.quantity = var.quantity
                 var_item.low_stock_threshold = var.low_stock_threshold
@@ -254,8 +272,8 @@ class ProductService:
             else:
                 variable = ProductVariation(
                     sku = var.sku,
-                    price = var.price,
-                    final_price = var.final_price,
+                    unit_price = var.unit_price,
+                    sales_price = var.sales_price,
                     cost_price = var.cost_price,
                     quantity = var.quantity,
                     low_stock_threshold = var.low_stock_threshold,
@@ -278,6 +296,35 @@ class ProductService:
         db.delete(product_db)
         db.commit()
     
+    def get_variation_by_id(self, db: Session, variation_id: int):
+        variation_item = db.query(ProductVariation).filter(ProductVariation.id == variation_id).first()
+        if not variation_item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='متغیر پیدا نشد')
+        return variation_item
+    
+    def get_variations_by_ids(self, db: Session, variation_ids: List[int]):
+        return db.query(ProductVariation).filter(ProductVariation.id.in_(variation_ids)).all()
+    
+    def get_variation_total_price(self, db: Session, variation_id: int, quantity: int) -> float:
+        if not variation_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='شناسه متغیر اجباری می باشد')
+        
+        variation = self.get_variation_by_id(db, variation_id)
+        
+        return float(variation.sales_price * quantity)
+            
+    
+    def reserve_quantity(db: Session, variation_id: int, quantity: int):
+        # Atomic query
+        try:
+            db.execute("UPDATE product_variations \
+                       SET quantity = quantity - :quantity, reserved_quantity = reserved_quantity + :quantity \
+                       WHERE id = :variation_id AND quantity >= :quantity",
+                       {"quantity": quantity, "variation_id": variation_id})
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='عملیات رزرو تعداد محصول با خطا مواجه شد')
     
     def get_attributes(self, db: Session):
         attributes = db.query(Attribute).all()
