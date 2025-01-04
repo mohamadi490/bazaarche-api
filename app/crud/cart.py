@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from core.exceptions import CustomHTTPException
 from models.cart import Cart, CartItem
-from models.product import ProductVariation
+from crud.product import product_service
 from starlette import status
 
 class CartService:
@@ -29,7 +29,7 @@ class CartService:
         cart = self.get_cart(db=db, user_id=current_user)
         if variation_id in [item.variation_id for item in cart.cart_items]:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='آیتم درون کارت وجود دارد')
-        total_price = float(self.get_variation_total_price(db=db, variation_id=variation_id, quantity=1))
+        total_price = product_service.get_variation_total_price(db=db, variation_id=variation_id, quantity=1)
         cart.total_amount += total_price
         new_item = CartItem(cart_id=cart.id, variation_id=variation_id, quantity=1, total_price=total_price)
         db.add(new_item)
@@ -41,19 +41,19 @@ class CartService:
         item = db.query(CartItem).filter(CartItem.id == item_id).first()
         if not item:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='آیتم مورد نظر پیدا نشد')
-        variation = db.query(ProductVariation).filter(ProductVariation.id == item.variation_id).first()
+        variation = product_service.get_variation_by_id(db, item.variation_id)
         if operation == '+':
             if variation.quantity > item.quantity:
                 item.quantity += 1
-                item.total_price += float(variation.final_price)
-                item.cart.total_amount += float(variation.final_price)
+                item.total_price += float(variation.sales_price)
+                item.cart.total_amount += float(variation.sales_price)
             else:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='تعداد محصولات انتخابی بیشتر از موجودی است')
         elif operation == '-':
             if item.quantity > 1:
                 item.quantity -= 1
-                item.total_price -= float(variation.final_price)
-                item.cart.total_amount -= float(variation.final_price)
+                item.total_price -= float(variation.sales_price)
+                item.cart.total_amount -= float(variation.sales_price)
             else:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='امکان کمتر کردن تعداد محصول وجود ندارد')
         else:
@@ -81,27 +81,17 @@ class CartService:
         cart.total_amount = 0
         db.commit()
         return cart
-        
-    def get_variation_total_price(self, db: Session, variation_id: int, quantity: int) -> float:
-        if variation_id:
-            variation = db.query(ProductVariation).filter(ProductVariation.id == variation_id).first()
-            if variation:
-                return variation.final_price * quantity
-            else:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='متغیر انتخابی پیدا نشد')
-        else:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='شناسه متغیر اجباری می باشد')
     
     def validate(self, db: Session, user_id: int):
 
-        cart = db.query(Cart).options(joinedload(Cart.cart_items)).filter(Cart.user_id == user_id).first()
+        cart = self.get_cart(db, user_id)
         
         if not cart:
             raise CustomHTTPException(status_code=404, message="Cart not found")
 
         # Fetch all product variations in one query
         variation_ids = [item.variation_id for item in cart.cart_items]
-        product_variations = db.query(ProductVariation).filter(ProductVariation.id.in_(variation_ids)).all()
+        product_variations = product_service.get_variations_by_ids(db, variation_ids)
         variation_map = {pv.id: pv for pv in product_variations}
 
         unvalidated_items = []
@@ -124,7 +114,7 @@ class CartService:
                     "message": "Not enough stock"
                 })
 
-            if product_variation.final_price != item.total_price / item.quantity:
+            if product_variation.sales_price != item.total_price / item.quantity:
                 unvalidated_items.append({
                     "product_id": product_variation.product_id,
                     "product_name": product_variation.product.name,
@@ -135,7 +125,7 @@ class CartService:
         if len(unvalidated_items) > 0:
             raise CustomHTTPException(status_code=400, message="Cart validation failed", data={"errors": unvalidated_items})
         
-        return True
+        return cart
         
         
 

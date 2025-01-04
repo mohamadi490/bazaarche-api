@@ -1,15 +1,12 @@
 import json
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
-from models import Order, OrderItem
-from models.cart import CartItem
-from models.order import OrderStatus
-from models.product import Product
-from models.setting import Setting
-from models.user import User
+from crud.product import product_service
+from crud.cart import cart_service
+from models import Order, OrderItem, OrderStatus, CartItem, Setting, User
 from schemas.pagination import Pagination
 from schemas.order import CreateOrder, UpdateOrder
-from crud.cart import cart_service
+
 
 class OrderService:
     def get_all(self, db: Session, page: int, size: int):
@@ -35,27 +32,21 @@ class OrderService:
         pass
     
     def add_order_item(self, db: Session, cart_item: CartItem, order_id: int) -> OrderItem:
-        product = db.query(Product).filter(Product.id == cart_item.variation.product_id).first()
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Product with ID {cart_item.variation.product_id} not found")
-        
+        product_item = product_service.get_by_id(db, cart_item.variation.product_id)
         order_item = OrderItem(
             order_id=order_id,
-            product_id=product.id,
-            product_name=product.name,
+            product_id=product_item.id,
+            product_name=product_item.name,
             product_metadata=json.dumps(cart_item.variation.id),
-            quantity=cart_item.variation.quantity,
-            unit_price=cart_item.variation.price,
-            total_price=cart_item.variation.price * cart_item.variation.quantity,
+            quantity=cart_item.quantity,
+            unit_price=cart_item.variation.sales_price,
+            total_price=cart_item.total_price,
         )
         return order_item
     
     def create(self, db: Session, current_user: int):
         # Validate and retrieve the cart
-        cart_service.validate(db, current_user)
-        cart = cart_service.get_cart(db, current_user)
-        if not cart:
-            raise HTTPException(status_code=404, detail="Cart not found")
+        cart = cart_service.validate(db, current_user)
 
         # Calculate total price
         total_price = sum(item.total_price for item in cart.cart_items)
@@ -74,22 +65,23 @@ class OrderService:
             # Remove existing order items
             db.query(OrderItem).filter(OrderItem.order_id == existing_order.id).delete()
             order_id = existing_order.id
-        else:
+        else: 
             # Create a new order
             new_order = Order(
                 customer_id=current_user,
                 order_total=total_price,
                 final_price=total_price,
                 status=OrderStatus.PENDING,
-            )
+            )  
             db.add(new_order)
             db.commit()
             db.refresh(new_order)
             order_id = new_order.id
 
-        # Add new order items to db
-        for item in cart.cart_items:
-            new_order_item = self.add_order_item(db, item, order_id)
+        # Reserve quantity of product_variation and add new order items to db
+        for cart_item in cart.cart_items:
+            product_service.reserve_quantity(db, cart_item.variation_id, cart_item.quantity)
+            new_order_item = self.add_order_item(db, cart_item, order_id)
             db.add(new_order_item)
 
         db.commit()
@@ -99,7 +91,7 @@ class OrderService:
         pass
         
     def update(self, db: Session, data: UpdateOrder, current_user: int):
-        
+        # Validate and retrieve the cart
         cart_service.validate(db, current_user)
         
         order = db.query(Order).filter(
