@@ -77,6 +77,7 @@ class ProductList(ProductBase):
     unit_price: Optional[int] = 0
     sales_price: Optional[int] = 0
     quantity: Optional[int] = 0
+    reserved_quantity: Optional[int] = 0
     var_status: Optional[str] = ''
     created_at: Optional[datetime]
     updated_at: Optional[datetime]

@@ -1,12 +1,9 @@
 from typing import List
 from fastapi import HTTPException
-from sqlalchemy import and_
-from sqlalchemy.orm import Session
-from models.file import File
+from sqlalchemy import and_, text
+from sqlalchemy.orm import Session, joinedload
+from models import File, User, Category
 from models.product import Attribute, Product, ProductAttribute, ProductType, ProductVariation, Status
-from models.collections import Category
-from sqlalchemy.orm import joinedload
-from models.user import User
 from schemas.pagination import Pagination
 from schemas.product import ProductConfig, ProductCreate, ProductUpdate
 from starlette import status
@@ -32,6 +29,7 @@ class ProductService:
                 product.unit_price = min_variation.unit_price
                 product.sales_price = min_variation.sales_price
                 product.quantity = min_variation.quantity
+                product.reserved_quantity = min_variation.reserved_quantity
                 product.var_status = min_variation.status
             
         pagination = Pagination(page=page, size=size, total_items=total_items, total_pages=total_pages)
@@ -314,17 +312,19 @@ class ProductService:
         return float(variation.sales_price * quantity)
             
     
-    def reserve_quantity(db: Session, variation_id: int, quantity: int):
+    def reserve_quantity(self, db: Session, variation_id: int, quantity: int):
         # Atomic query
         try:
-            db.execute("UPDATE product_variations \
-                       SET quantity = quantity - :quantity, reserved_quantity = reserved_quantity + :quantity \
-                       WHERE id = :variation_id AND quantity >= :quantity",
-                       {"quantity": quantity, "variation_id": variation_id})
+            db.execute(
+                text("UPDATE product_variations "
+                       "SET quantity = quantity - :quantity, reserved_quantity = reserved_quantity + :quantity "
+                       "WHERE id = :variation_id AND quantity >= :quantity"),
+                       {"quantity": quantity, "variation_id": variation_id}
+                )
             db.commit()
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='عملیات رزرو تعداد محصول با خطا مواجه شد')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'عملیات رزرو تعداد محصول با خطا مواجه شد')
     
     def get_attributes(self, db: Session):
         attributes = db.query(Attribute).all()
