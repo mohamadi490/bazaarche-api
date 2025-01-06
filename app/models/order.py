@@ -3,7 +3,6 @@ from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, Numeric, Str
 from sqlalchemy.orm import relationship
 from .base import Base
 import enum
-import json
 
 class OrderStatus(enum.Enum):
     PENDING = "pending"
@@ -42,7 +41,7 @@ class OrderItem(Base):
     product_name = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Numeric(20,0), nullable=False)
-    total_price = Column(Numeric(20,0), nullable=False)  # unit_price * quantity
+    sales_price = Column(Numeric(20,0), nullable=False)
     product_metadata = Column(String, nullable=True)
     
     order = relationship("Order", back_populates="order_items")
