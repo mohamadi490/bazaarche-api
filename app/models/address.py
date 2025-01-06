@@ -42,6 +42,7 @@ class Address(Base):
     country_id = Column(Integer, ForeignKey('countries.id'), nullable=False)
     province_id = Column(Integer, ForeignKey('provinces.id'), nullable=False)
     city_id = Column(Integer, ForeignKey('cities.id'), nullable=False)
+    title = Column(String(255), nullable=False)
     postal_code = Column(String(20), nullable=False)
     phone_number = Column(String(11), nullable=True)
     line_1 = Column(String(255), nullable=False)
