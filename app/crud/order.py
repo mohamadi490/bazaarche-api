@@ -5,7 +5,7 @@ from crud.product import product_service
 from crud.cart import cart_service
 from models import Order, OrderItem, OrderStatus, CartItem, Setting, User
 from schemas.pagination import Pagination
-from schemas.order import CreateOrder, UpdateOrder
+from schemas.order import CreateOrder
 
 
 class OrderService:
@@ -39,44 +39,36 @@ class OrderService:
             product_name=product_item.name,
             product_metadata=json.dumps(cart_item.variation.id),
             quantity=cart_item.quantity,
-            unit_price=cart_item.variation.sales_price,
-            total_price=cart_item.total_price,
+            unit_price=cart_item.variation.unit_price,
+            sales_price=cart_item.variation.sales_price
         )
         return order_item
     
-    def create(self, db: Session, current_user: int):
+    def create(self, db: Session, order_in: CreateOrder, current_user: int):
         # Validate and retrieve the cart
         cart = cart_service.validate(db, current_user)
+        
+        # Determine the tax amount based on the total amount of the cart if tax exist
+        tax_amount = 0
+        tax = db.query(Setting).filter_by(key='tax').first()
+        if tax:
+            tax_amount = (int(json.loads(tax.value)) * cart.total_amount) / 100
 
-        # Calculate total price
-        total_price = sum(item.total_price for item in cart.cart_items)
-
-        # Check for existing pending order
-        existing_order = db.query(Order).filter(
-            Order.customer_id == current_user,
-            Order.status == OrderStatus.PENDING
-        ).first()
-
-        if existing_order:
-            # Update the existing order
-            existing_order.order_total = total_price
-            existing_order.final_price = total_price
-
-            # Remove existing order items
-            db.query(OrderItem).filter(OrderItem.order_id == existing_order.id).delete()
-            order_id = existing_order.id
-        else: 
-            # Create a new order
-            new_order = Order(
-                customer_id=current_user,
-                order_total=total_price,
-                final_price=total_price,
-                status=OrderStatus.PENDING,
-            )  
-            db.add(new_order)
-            db.commit()
-            db.refresh(new_order)
-            order_id = new_order.id
+        # Create a new order
+        new_order = Order(
+            customer_id = current_user,
+            address_id = order_in.address_id,
+            shipping_id = order_in.shipping_id,
+            shipping_cost = order_in.shipping_cost,
+            tax_amount = tax_amount,
+            order_total = cart.total_amount,
+            final_price = cart.total_amount + order_in.shipping_cost + tax_amount,
+            status=OrderStatus.PENDING,
+        )
+        db.add(new_order)
+        db.commit()
+        db.refresh(new_order)
+        order_id = new_order.id
 
         # Reserve quantity of product_variation and add new order items to db
         for cart_item in cart.cart_items:
@@ -86,11 +78,16 @@ class OrderService:
 
         db.commit()
         
+        # clear cart
+        # cart_service.delete_cart_items(db, current_user)
+        
+        return order_id
+        
     
     def admin_create(self, db: Session, data: CreateOrder):
         pass
         
-    def update(self, db: Session, data: UpdateOrder, current_user: int):
+    def update(self, db: Session, current_user: int):
         # Validate and retrieve the cart
         cart_service.validate(db, current_user)
         
@@ -101,17 +98,6 @@ class OrderService:
         
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
-        
-        tax_amount = 0
-        tax = db.query(Setting).filter_by(key='tax').first()
-        if tax:
-            tax_amount = (int(json.loads(tax.value)) * order.order_total) / 100
-        
-        order.address_id = data.address_id
-        order.shipping_id = data.shipping_id
-        order.shipping_cost = data.shipping_cost
-        order.tax_amount = tax_amount
-        order.final_price = order.order_total + data.shipping_cost + tax_amount
         
         db.commit()
         db.refresh(order)

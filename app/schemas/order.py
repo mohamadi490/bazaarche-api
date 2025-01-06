@@ -19,12 +19,12 @@ class OrderItemSchema(BaseModel):
     product_metadata: str
     quantity: int
     unit_price: int
+    sales_price: int
 
 class CreateOrder(BaseModel):
-    customer_id: int
-    order_total: int
-    final_price: int
-    items: List[OrderItemSchema]
+    address_id: int
+    shipping_id: int
+    shipping_cost: int
 
     class Config:
         orm_mode = True
