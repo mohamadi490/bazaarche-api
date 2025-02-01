@@ -15,13 +15,14 @@ auth_router = APIRouter(
     tags=["auth"]
 )
 
-@auth_router.post('/panel', response_model=Token)
+@auth_router.post('/panel', response_model=Result[Token])
 def panel_login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = auth_service.authenticate_user(form_data.username, form_data.password, db)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='اطلاعات وارد شده اشتباه است')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='اطلاعات وارد شده اشتباه است')
     token = create_access_token(subject=str(user.id), expires_delta=timedelta(minutes=20))
-    return {'access_token': token, 'token_type': 'bearer'}
+    data = {'access_token': token, 'token_type': 'bearer'}
+    return Result(isDone=True, data=data, message='درخواست با موفقیت انجام شد')
 
 
 @auth_router.post("/verify", response_model=Result)
