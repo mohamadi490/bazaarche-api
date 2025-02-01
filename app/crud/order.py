@@ -3,7 +3,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from crud.product import product_service
 from crud.cart import cart_service
-from models import Order, OrderItem, OrderStatus, CartItem, Setting, User
+from crud.setting import setting_service
+from models import Order, OrderItem, OrderStatus, CartItem, User
 from schemas.pagination import Pagination
 from schemas.order import CreateOrder
 
@@ -50,9 +51,9 @@ class OrderService:
         
         # Determine the tax amount based on the total amount of the cart if tax exist
         tax_amount = 0
-        tax = db.query(Setting).filter_by(key='tax').first()
+        tax = setting_service.get_value(db, 'tax')
         if tax:
-            tax_amount = (int(json.loads(tax.value)) * cart.total_amount) / 100
+            tax_amount = (int(tax) * cart.total_amount) / 100
 
         # Create a new order
         new_order = Order(
