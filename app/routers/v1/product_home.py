@@ -17,7 +17,7 @@ product_router = APIRouter(
 
 @product_router.get("/", response_model=PaginationResult[List[Products]], status_code=status.HTTP_200_OK)
 async def get_products(product_config: ProductConfig, db: Session = Depends(get_db)):
-    items, pagination = product_service.get_list(db, product_config)
+    items, pagination = product_service.get_home_products(db, product_config)
     return PaginationResult(isDone=True, data=items, pagination=pagination, message='عملیات با موفقیت انجام شد!')
 
 

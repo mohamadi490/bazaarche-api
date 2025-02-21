@@ -4,7 +4,7 @@ from core.security import get_current_user
 from core.database import get_db
 from sqlalchemy.orm import Session
 from crud.product import product_service
-from schemas.product import AttributeSchema, ProductBase, Product, ProductCreate, ProductUpdate, SimpleProduct, ProductList
+from schemas.product import AttributeSchema, Product, ProductCreate, ProductUpdate, ProductList
 from schemas.result import PaginationResult, Result
 from typing import List
 
@@ -29,7 +29,7 @@ async def create_attribute(attribute_name: str, db: Session = Depends(get_db), c
 
 @admin_product_router.get("/", response_model=PaginationResult[List[ProductList]], status_code=status.HTTP_200_OK)
 async def get_products(db: Session = Depends(get_db), page: int = Query(1, ge=1), size: int = Query(10, ge=1), current_user: UserBase = Depends(get_current_user)):
-    items, pagination = product_service.get_all(db, page, size)
+    items, pagination = product_service.get_products(db, page, size)
     return PaginationResult(isDone=True, data=items, pagination=pagination, message='عملیات با موفقیت انجام شد!')
 
 
