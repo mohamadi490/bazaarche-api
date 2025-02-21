@@ -8,8 +8,13 @@ from schemas.pagination import paginationConfig
 from schemas.user import SimpleUser
 from schemas.attribute import *
 
+class VariationAttributes(BaseModel):
+    attribute_id: int
+    value: str
+
 class VariationBase(BaseModel):
     sku: str
+    variation_attributes: List[VariationAttributes]
     cost_price: int
     unit_price: int
     sales_price: int

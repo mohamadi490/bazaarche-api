@@ -66,7 +66,6 @@ class ProductVariation(Base):
     
     id = Column(Integer, primary_key=True)
     product_id = Column(Integer, ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
-    product_attribute_id = Column(Integer, ForeignKey('product_attributes.id', ondelete='CASCADE'), nullable=True)
     sku = Column(String(64), unique=True, nullable=False)
     cost_price = Column(Numeric(20, 0), nullable=True)
     unit_price = Column(Numeric(20, 0), nullable=False, default=0)
@@ -81,7 +80,7 @@ class ProductVariation(Base):
     deleted_at = Column(DateTime, nullable=True)
     
     product = relationship("Product", back_populates="variations")
-    product_attribute = relationship("ProductAttribute")
+    variation_attributes = relationship("VariationAttribute", back_populates="product_variation")
     cart_items = relationship("CartItem", back_populates="variation")
 
 class Attribute(Base):
@@ -109,7 +108,17 @@ class ProductAttribute(Base):
     
     product = relationship('Product', back_populates='attributes')
     attribute = relationship('Attribute', back_populates='products')
+    variation_attributes = relationship("VariationAttribute", back_populates="product_attribute")
 
+class VariationAttribute(Base):
+    __tablename__ = 'Variation_attributes'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    product_variation_id = Column(Integer, ForeignKey('product_variations.id', ondelete='CASCADE'), nullable=False)
+    product_attribute_id = Column(Integer, ForeignKey('product_attributes.id', ondelete='CASCADE'), nullable=False)
+
+    product_variation = relationship("ProductVariation", back_populates="variation_attributes")
+    product_attribute = relationship("ProductAttribute", back_populates="variation_attributes")
 
 product_categories = Table('product_categories', Base.metadata,
     Column('product_id', Integer, ForeignKey('products.id', ondelete='CASCADE')),

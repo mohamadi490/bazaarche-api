@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy import and_, text
 from sqlalchemy.orm import Session, joinedload
 from models import File, User, Category
-from models.product import Attribute, Product, ProductAttribute, ProductType, ProductVariation, Status
+from models.product import Attribute, Product, ProductAttribute, ProductType, ProductVariation, Status, VariationAttribute
 from schemas.pagination import Pagination
 from schemas.product import ProductConfig, ProductCreate, ProductUpdate
 from starlette import status
@@ -11,7 +11,7 @@ from starlette import status
 
 class ProductService:
     
-    def get_all(self, db: Session, page: int, size: int):
+    def get_products(self, db: Session, page: int, size: int):
         query = db.query(Product).options(
             joinedload(Product.user).load_only(User.id, User.username),
             joinedload(Product.files),
@@ -35,7 +35,7 @@ class ProductService:
         pagination = Pagination(page=page, size=size, total_items=total_items, total_pages=total_pages)
         return items, pagination
     
-    def get_list(self, db: Session, product_config: ProductConfig):
+    def get_home_products(self, db: Session, product_config: ProductConfig):
     
         query = db.query(
             Product,
@@ -99,16 +99,22 @@ class ProductService:
     
     
     def get(self, db: Session, product_slug: str):
+        
         product_item = db.query(Product).options(
                 joinedload(Product.user).load_only(User.id, User.username),
                 joinedload(Product.files),
-                joinedload(Product.categories).load_only(Category.id, Category.name,Category.slug, Category.parent_id),
+                joinedload(Product.categories).load_only(Category.id, Category.name, Category.slug, Category.parent_id),
                 joinedload(Product.attributes).joinedload(ProductAttribute.attribute),
-                joinedload(Product.variations),
+                joinedload(Product.variations).joinedload(ProductVariation.product_attribute),  # بارگذاری ویژگی‌های هر variation
                 joinedload(Product.tags)).filter(Product.slug == product_slug).first()
         
         if not product_item:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر پیدا نشد')
+        
+        # اضافه کردن لیست ویژگی‌ها به محصول
+        product_item.attributes_list = [
+            {'name': attr.attribute.name, 'value': attr.value} for attr in product_item.attributes
+        ]
         
         return product_item
     
@@ -125,21 +131,45 @@ class ProductService:
         if product_item:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='لینک ارسالی تکراری می باشد')
         
+        product_type = (
+            ProductType.VARIABLE if product_in.variations and len(product_in.variations) > 1
+            else ProductType.SIMPLE
+        )
+        
         product = Product(
             name=product_in.name,
             slug=product_in.slug,
-            type=ProductType.VARIABLE if len(product_in.variations) > 1 else ProductType.SIMPLE,
+            type=product_type,
             user_id=int(current_user),
             featured=product_in.featured,
             description=product_in.description,
             body=product_in.body,
             status=product_in.status,
         )
+        db.add(product)
+        db.flush()  # اختصاص id به product
 
         # Add categories
         if product_in.category_ids:
             product.categories = [db.query(Category).get(cat_id) for cat_id in product_in.category_ids]
+            
+        # Add images
+        if product_in.images:
+            for img in product_in.images:
+                image = File(
+                    url=img.url,
+                    alt=img.alt,
+                    is_thumbnail=img.is_thumbnail,
+                    order=img.order,
+                    type=img.type,
+                    entity_type='product'
+                )
+                product.files.append(image)
 
+
+        # دیکشنری نگهدارنده ویژگی‌های محصول: کلید (attribute_id, value) -> شیء ProductAttribute
+        prod_attr_map = {}
+        
         # Add attributes
         if product_in.attributes:
             for attr in product_in.attributes:
@@ -149,18 +179,8 @@ class ProductService:
                     show_top=attr.show_top
                 )
                 product.attributes.append(product_attr)
-
-        # Add images
-        if product_in.images:
-            for img in product_in.images:
-                image = File(
-                    url=img.url,
-                    alt=img.alt,
-                    is_thumbnail=img.is_thumbnail,
-                    order=img.order,
-                    entity_type='product'
-                )
-                product.files.append(image)
+                db.flush()  # اختصاص id به product_attr
+                prod_attr_map[(attr.attribute_id, attr.value)] = product_attr
 
         # Add variations
         if product_in.variations:
@@ -179,9 +199,19 @@ class ProductService:
                     weight=var.weight,
                     status=var.status
                 )
+                
+                # پردازش ویژگی‌های واریشن (هر کدام شامل attribute_id و value)
+                for var_attr in var.variation_attributes:
+                    key = (var_attr.attribute_id, var_attr.value)
+                    # استفاده از ویژگی موجود
+                    if key in prod_attr_map:
+                        pa = prod_attr_map[key]
+                    # ایجاد VariationAttribute با ارجاع به ProductAttribute
+                    variation_attr = VariationAttribute(product_attribute_id=pa.id)
+                    variation.variation_attributes.append(variation_attr)
+                
                 product.variations.append(variation)
 
-        db.add(product)
         db.commit()
         db.refresh(product)
         return product
