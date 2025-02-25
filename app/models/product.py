@@ -80,7 +80,7 @@ class ProductVariation(Base):
     deleted_at = Column(DateTime, nullable=True)
     
     product = relationship("Product", back_populates="variations")
-    variation_attributes = relationship("VariationAttribute", back_populates="product_variation")
+    variation_attributes = relationship("VariationAttribute", back_populates="product_variation", cascade="all, delete-orphan")
     cart_items = relationship("CartItem", back_populates="variation")
 
 class Attribute(Base):
@@ -119,6 +119,21 @@ class VariationAttribute(Base):
 
     product_variation = relationship("ProductVariation", back_populates="variation_attributes")
     product_attribute = relationship("ProductAttribute", back_populates="variation_attributes")
+    
+    
+    @property
+    def name(self):
+        # اگر product_attribute و رابطه attribute وجود داشته باشد، نام ویژگی را برگردانید
+        if self.product_attribute and self.product_attribute.attribute:
+            return self.product_attribute.attribute.name
+        return None
+
+    @property
+    def value(self):
+        # مقدار مربوط به ویژگی از product_attribute
+        if self.product_attribute:
+            return self.product_attribute.value
+        return None
 
 product_categories = Table('product_categories', Base.metadata,
     Column('product_id', Integer, ForeignKey('products.id', ondelete='CASCADE')),

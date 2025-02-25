@@ -1,9 +1,9 @@
 
 from datetime import datetime
-from typing import Optional, List
+from typing import List
 from pydantic import BaseModel
 from schemas.category import SimpleCategory
-from schemas.media import Image, ImageBase, ProductImage, ProductImage
+from schemas.media import ImageBase, ProductImage
 from schemas.pagination import paginationConfig
 from schemas.user import SimpleUser
 from schemas.attribute import *
@@ -12,9 +12,12 @@ class VariationAttributes(BaseModel):
     attribute_id: int
     value: str
 
+class VariationAttributesResponse(BaseModel):
+    name: str
+    value: str
+
 class VariationBase(BaseModel):
     sku: str
-    variation_attributes: List[VariationAttributes]
     cost_price: int
     unit_price: int
     sales_price: int
@@ -22,9 +25,17 @@ class VariationBase(BaseModel):
     quantity: int
     low_stock_threshold: int
     status: str
+
+class VariationCreate(VariationBase):
+    variation_attributes: List[VariationAttributes]
         
 class Variation(VariationBase):
     id: int
+    variation_attributes: List[VariationAttributesResponse]
+
+class VariationUpdate(VariationBase):
+    id: Optional[int] = None
+    variation_attributes: List[VariationAttributes]
 
 class ProductBase(BaseModel):
     name: str
@@ -44,19 +55,19 @@ class ProductCreate(ProductBase):
     body: Optional[str] = None
     category_ids: List[int]
     attributes: List[ProductAttributeCreate]
-    images: List[ImageBase]
-    variations: List[VariationBase]
+    files: List[ImageBase]
+    variations: List[VariationCreate]
     status: str
 
 class ProductUpdate(ProductBase):
     body: Optional[str] = None
     category_ids: List[int]
     attributes: List[ProductAttributeUpdate]
-    images: List[ProductImage]
-    variations: List[Variation]
-    deleted_image_ids: List[int]
-    deleted_attr_ids: List[int]
-    deleted_var_ids: List[int]
+    files: Optional[List[ProductImage]] = None
+    variations: List[VariationUpdate]
+    deleted_image_ids: Optional[List[int]] = None
+    deleted_attr_ids: Optional[List[int]] = None
+    deleted_var_ids: Optional[List[int]] = None
     status: str
 
 class Product(ProductBase):

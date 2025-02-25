@@ -97,7 +97,6 @@ class ProductService:
         )
         return product_lists, pagination
     
-    
     def get(self, db: Session, product_slug: str):
         
         product_item = db.query(Product).options(
@@ -105,8 +104,12 @@ class ProductService:
                 joinedload(Product.files),
                 joinedload(Product.categories).load_only(Category.id, Category.name, Category.slug, Category.parent_id),
                 joinedload(Product.attributes).joinedload(ProductAttribute.attribute),
-                joinedload(Product.variations).joinedload(ProductVariation.product_attribute),  # بارگذاری ویژگی‌های هر variation
-                joinedload(Product.tags)).filter(Product.slug == product_slug).first()
+                joinedload(Product.variations)
+                    .joinedload(ProductVariation.variation_attributes)
+                    .joinedload(VariationAttribute.product_attribute)
+                    .joinedload(ProductAttribute.attribute),
+                joinedload(Product.tags)
+                ).filter(Product.slug == product_slug).first()
         
         if not product_item:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر پیدا نشد')
@@ -115,6 +118,15 @@ class ProductService:
         product_item.attributes_list = [
             {'name': attr.attribute.name, 'value': attr.value} for attr in product_item.attributes
         ]
+        
+        # features list of variation
+        for var in product_item.variations:
+            var.attributes_list = [
+                {
+                    'name': va.product_attribute.attribute.name,
+                    'value': va.product_attribute.value
+                } for va in var.variation_attributes
+            ]
         
         return product_item
     
@@ -154,8 +166,8 @@ class ProductService:
             product.categories = [db.query(Category).get(cat_id) for cat_id in product_in.category_ids]
             
         # Add images
-        if product_in.images:
-            for img in product_in.images:
+        if product_in.files:
+            for img in product_in.files:
                 image = File(
                     url=img.url,
                     alt=img.alt,
@@ -223,8 +235,8 @@ class ProductService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر پیدا نشد')
         
         if product_in.slug != product_slug:
-            existing_product = db.query(Product.id).filter(Product.slug == product_in.slug).first()
-            if existing_product and existing_product.id != product_db.id:
+            existing_product_id = db.query(Product.id).filter(Product.slug == product_in.slug).scalar()
+            if existing_product_id and existing_product_id != product_db.id:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='لینک ارسالی تکراری می باشد')
         
         product_db.name = product_in.name
@@ -239,17 +251,41 @@ class ProductService:
         if product_in.category_ids:
             product_db.categories = [db.query(Category).get(cat_id) for cat_id in product_in.category_ids]
         
-        if product_in.deleted_attr_ids:
-                product_db.attributes = [attr for attr in product_db.attributes if attr.id not in product_in.deleted_attr_ids]
+        if product_in.deleted_image_ids:
+                product_db.files = [image for image in product_db.files if image.id not in product_in.deleted_image_ids]
         
-        attributes = {attr.id: attr for attr in product_db.attributes}
+        for img in product_in.files:
+            if hasattr(img, "id") and img.id:
+                # Update existing images
+                image_item = db.query(File).filter(File.id == img.id).first()
+                if image_item:
+                    image_item.url = img.url
+                    image_item.alt = img.alt
+                    image_item.order = img.order
+                    image_item.type = img.type
+                    image_item.is_thumbnail = img.is_thumbnail
+            else:
+                image = File(
+                    url=img.url,
+                    alt=img.alt,
+                    is_thumbnail=img.is_thumbnail,
+                    order=img.order,
+                    type=img.type,
+                    entity_type='product'
+                )
+                product_db.files.append(image)
+        
+        if product_in.deleted_attr_ids:
+            product_db.attributes = [attr for attr in product_db.attributes if attr.id not in product_in.deleted_attr_ids]
+        
+        # attributes = {attr.id: attr for attr in product_db.attributes}
         for attr in product_in.attributes:
-            if attr.id in attributes:
+            if hasattr(attr, "id") and attr.id:
                 # Update existing attribute
-                item = db.query(ProductAttribute).filter(ProductAttribute.id == attr.id).first()
-                item.value = attr.value
-                item.show_top = attr.show_top
-                item.attribute_id = attr.attribute_id
+                product_attr = db.query(ProductAttribute).filter(ProductAttribute.id == attr.id).first()
+                product_attr.value = attr.value
+                product_attr.show_top = attr.show_top
+                product_attr.attribute_id = attr.attribute_id
             else:
                 product_attr = ProductAttribute(
                     attribute_id=attr.attribute_id,
@@ -257,47 +293,52 @@ class ProductService:
                     show_top=attr.show_top
                 )
                 product_db.attributes.append(product_attr)
+                db.flush()
         
-        if product_in.deleted_image_ids:
-                product_db.files = [image for image in product_db.files if image.id not in product_in.deleted_image_ids]
-        
-        images = {img.id: img for img in product_db.files}
-        for img in product_in.images:
-            if img.id in images:
-                # Update existing images
-                image_item = db.query(File).filter(File.id == img.id).first()
-                image_item.url = img.url
-                image_item.alt = img.alt
-                image_item.order = img.order
-                image_item.is_thumbnail = img.is_thumbnail
-            else:
-                image = File(
-                    url=img.url,
-                    alt=img.alt,
-                    is_thumbnail=img.is_thumbnail,
-                    order=img.order,
-                    entity_type='product'
-                )
-                product_db.files.append(image)
+        # ایجاد دیکشنری نگهدارنده ویژگی‌های محصول جهت استفاده در واریشن‌ها
+        prod_attr_map = {}
+        for pa in product_db.attributes:
+            key = (pa.attribute_id, pa.value)
+            prod_attr_map[key] = pa
             
         if product_in.deleted_var_ids:
                 product_db.variations = [var for var in product_db.variations if var.id not in product_in.deleted_var_ids]
 
-        variations = {var.id: var for var in product_db.variations}
         for var in product_in.variations:
-            if var.id in variations:
+            
+            if hasattr(var, "id") and var.id:
                 # Retrieve and update the existing variation
                 var_item = db.query(ProductVariation).filter(ProductVariation.id == var.id).first()
                 # SKU is not updated as it's a unique identifier and should not change
                 # var_item.sku = var.sku
-                var_item.unit_price = var.unit_price
-                var_item.sales_price = var.sales_price
-                var_item.cost_price = var.cost_price
-                var_item.quantity = var.quantity
-                var_item.low_stock_threshold = var.low_stock_threshold
-                var_item.weight = var.weight
-                var_item.status = var.status
+                if var_item:
+                    var_item.unit_price = var.unit_price
+                    var_item.sales_price = var.sales_price
+                    var_item.cost_price = var.cost_price
+                    var_item.quantity = var.quantity
+                    var_item.low_stock_threshold = var.low_stock_threshold
+                    var_item.weight = var.weight
+                    var_item.status = var.status
+                    
+                    # حذف واریشن اتربیوت‌های قدیمی و اضافه کردن مجدد بر اساس ورودی جدید
+                    var_item.variation_attributes.clear()
+                    # پردازش ویژگی‌های واریشن (هر کدام شامل attribute_id و value)
+                    for var_attr in var.variation_attributes:
+                        key = (var_attr.attribute_id, var_attr.value)
+                        # استفاده از ویژگی موجود
+                        if key in prod_attr_map:
+                            pa = prod_attr_map[key]
+                            # ایجاد VariationAttribute با ارجاع به ProductAttribute
+                            variation_attr = VariationAttribute(product_attribute_id=pa.id)
+                            var_item.variation_attributes.append(variation_attr)
+                            variation_attr.product_variation_id = var_item.id
+                
             else:
+                # check sku variation
+                exsiting_variation = db.query(ProductVariation).filter(ProductVariation.sku == var.sku).first()
+                if exsiting_variation:
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'متفیر با شناسه {var.sku} تکراری می باشد')
+                
                 variable = ProductVariation(
                     sku = var.sku,
                     unit_price = var.unit_price,
@@ -308,8 +349,17 @@ class ProductService:
                     weight = var.weight,
                     status = var.status
                 )
+                db.add(variable)
+                db.flush()
+                for var_attr in var.variation_attributes:
+                    key = (var_attr.attribute_id, var_attr.value)
+                    # استفاده از ویژگی موجود
+                    if key in prod_attr_map:
+                        pa = prod_attr_map[key]
+                        # ایجاد VariationAttribute با ارجاع به ProductAttribute
+                        variation_attr = VariationAttribute(product_attribute_id=pa.id)
+                        variable.variation_attributes.append(variation_attr)
                 product_db.variations.append(variable)
-                
                 
         db.commit()
         db.refresh(product_db)
@@ -341,7 +391,6 @@ class ProductService:
         
         return float(variation.sales_price * quantity)
             
-    
     def reserve_quantity(self, db: Session, variation_id: int, quantity: int):
         # Atomic query
         try:

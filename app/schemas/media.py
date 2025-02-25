@@ -12,7 +12,7 @@ class ImageBase(BaseModel):
     type: int
 
 class ProductImage(ImageBase):
-    id: int
+    id: Optional[int] = None
     
 class Image(ImageBase):
     id: int

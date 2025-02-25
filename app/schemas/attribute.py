@@ -1,6 +1,7 @@
 
 from datetime import datetime
-from pydantic import BaseModel
+from typing import Optional
+from pydantic import BaseModel, root_validator
 
 
 class AttributeBase(BaseModel):
@@ -22,11 +23,22 @@ class ProductAttributeCreate(ProductAttributeBase):
     attribute_id: int
 
 class ProductAttributeUpdate(ProductAttributeCreate):
-    id: int
+    id: Optional[int] = None
     
 class ProductAttribute(ProductAttributeBase):
     id: int
-    attribute: AttributeBase
+    attribute_id: int
+    name: str
+    
+    @root_validator(pre=True)
+    def extract_attribute_name(cls, values):
+        attr = values.attribute
+        if attr:
+            if hasattr(attr, 'name'):
+                values.name = attr.name
+            if hasattr(attr, 'attribute_id'):
+                values.attribute_id = attr.attribute_id
+        return values
 
     class Config:
         orm_mode = True
