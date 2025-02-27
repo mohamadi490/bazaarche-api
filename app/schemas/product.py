@@ -111,9 +111,20 @@ class Products(ProductBase):
     unit_price: Optional[int] = 0
     sales_price: Optional[int] = 0
     quantity: Optional[int] = 0
-    var_id: int
+    var_id: Optional[int] = None
+    sku: Optional[str] = ''
     var_status: Optional[str] = ''
-    categories: Optional[List[SimpleCategory]]
+    categories: Optional[List[SimpleCategory]] = None
+
+class ProductFilters(BaseModel):
+    min_price: Optional[int] = 0
+    max_price: Optional[int] = 0
+    categories: Optional[List[SimpleCategory]] = None
+    ordering_options: list[str]
+    
+class ProductListData(BaseModel):
+    products: list[Products]
+    filters: ProductFilters
 
 class ProductVariation(BaseModel):
     id: int

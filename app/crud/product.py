@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import HTTPException
-from sqlalchemy import and_, text
+from sqlalchemy import and_, or_, text, func
 from sqlalchemy.orm import Session, joinedload
 from models import File, User, Category
 from models.product import Attribute, Product, ProductAttribute, ProductType, ProductVariation, Status, VariationAttribute
@@ -34,69 +34,166 @@ class ProductService:
             
         pagination = Pagination(page=page, size=size, total_items=total_items, total_pages=total_pages)
         return items, pagination
-    
+
     def get_home_products(self, db: Session, product_config: ProductConfig):
-    
-        query = db.query(
-            Product,
-            ProductVariation.id.label('var_id'),
-            ProductVariation.unit_price,
-            ProductVariation.sales_price, 
-            ProductVariation.quantity, 
-            ProductVariation.status.label('var_status')
-            ).join(ProductVariation).options(
-                joinedload(Product.categories).load_only(Category.id, Category.name,Category.slug, Category.parent_id),
-                joinedload(Product.files)
-            ).filter(Product.status == Status.PUBLISHED)
-        
-        # Apply filters
+        # تعریف alias ها
+        PV = ProductVariation
+        P = Product
+
+        # زیرکوئری: انتخاب variationها همراه با شماره ردیف (row_number) بر اساس sales_price (صعودی)
+        # شرط: یا وضعیت variation برابر INSTOCK باشد یا محصول SIMPLE باشد
+        variation_subq = (
+            db.query(
+                PV.id.label("var_id"),
+                PV.sku,
+                PV.product_id,
+                PV.unit_price,
+                PV.sales_price,
+                PV.quantity,
+                PV.status.label("var_status"),
+                func.row_number().over(
+                    partition_by=PV.product_id,
+                    order_by=PV.sales_price
+                ).label("rn")
+            )
+            .join(P, P.id == PV.product_id)
+            .filter(
+                or_(
+                    PV.status == "INSTOCK",
+                    P.type == ProductType.SIMPLE
+                )
+            )
+            .subquery()
+        )
+
+        # کوئری اصلی: اتصال محصولات به زیرکوئری و انتخاب تنها ردیف‌هایی که rn == 1 دارند
+        query = (
+            db.query(
+                P,
+                variation_subq.c.var_id,
+                variation_subq.c.sku,
+                variation_subq.c.unit_price,
+                variation_subq.c.sales_price,
+                variation_subq.c.quantity,
+                variation_subq.c.var_status
+            )
+            .select_from(P)
+            .join(variation_subq, variation_subq.c.product_id == P.id)
+            .filter(variation_subq.c.rn == 1)
+            .options(
+                joinedload(P.categories).load_only(Category.id, Category.name, Category.slug, Category.parent_id),
+                joinedload(P.files)
+            )
+            .filter(P.status == Status.PUBLISHED)
+        )
+
+        # اعمال فیلتر بر اساس دسته‌بندی‌ها
         if product_config.categories:
-            query = query.filter(and_(*[Product.categories.any(Category.id == cat_id) for cat_id in product_config.categories]))
-        
+            query = query.filter(
+                and_(*[P.categories.any(Category.id == cat_id) for cat_id in product_config.categories])
+            )
+
+        # اعمال فیلتر قیمت (استفاده از sales_price variation انتخاب شده)
         if product_config.price_min is not None:
-            query = query.filter(ProductVariation.sales_price >= product_config.price_min)
-        
+            query = query.filter(variation_subq.c.sales_price >= product_config.price_min)
         if product_config.price_max is not None:
-            query = query.filter(ProductVariation.sales_price <= product_config.price_max)
-        
-        # Order by
+            query = query.filter(variation_subq.c.sales_price <= product_config.price_max)
+
+        # مرتب‌سازی
         if product_config.order_by == 'newest':
-            query = query.order_by(Product.created_at.desc())
+            query = query.order_by(P.created_at.desc())
         elif product_config.order_by == 'expensive':
-            query = query.order_by(ProductVariation.sales_price.desc())
+            query = query.order_by(variation_subq.c.sales_price.desc())
         elif product_config.order_by == 'cheapest':
-            query = query.order_by(ProductVariation.sales_price)
-        
-        # Paginate
-        paginated_query, total_items, total_pages = Pagination.paginate_query(query, product_config.paginate.page, product_config.paginate.size)
+            query = query.order_by(variation_subq.c.sales_price)
+
+        # صفحه‌بندی
+        paginated_query, total_items, total_pages = Pagination.paginate_query(
+            query, product_config.paginate.page, product_config.paginate.size
+        )
         items = paginated_query.all()
+
+        # تبدیل نتایج به ساختار نهایی: اطلاعات محصول به همراه فیلدهای variation به صورت مسطح
+        product_lists = []
+        for product, var_id, sku, unit_price, sales_price, quantity, var_status in items:
+            product_lists.append({
+                'id': product.id,
+                'name': product.name,
+                'slug': product.slug,
+                'description': product.description,
+                'featured': product.featured,
+                'categories': product.categories,
+                'thumbnail': next((file for file in product.files if file.is_thumbnail), None),
+                'var_id': var_id,
+                'sku': sku,
+                'unit_price': unit_price,
+                'sales_price': sales_price,
+                'quantity': quantity,
+                'var_status': var_status,
+            })
         
-        # Convert each product to ProductList schema
-        product_lists = [
-            {
-                'id': item.Product.id,
-                'name': item.Product.name,
-                'slug': item.Product.slug,
-                'description': item.Product.description,
-                'featured': item.Product.featured,
-                'categories': item.Product.categories,
-                'thumbnail': next((file for file in item.Product.files if file.is_thumbnail), None),
-                'var_id': item.var_id,
-                'unit_price': item.unit_price,
-                'sales_price': item.sales_price,
-                'quantity': item.quantity,
-                'var_status': item.var_status,
-            } for item in items
-        ]
-        
+        filters_data = self.get_products_filtering(db)
+
         pagination = Pagination(
             page=product_config.paginate.page,
             size=product_config.paginate.size,
             total_items=total_items,
             total_pages=total_pages
         )
-        return product_lists, pagination
-    
+
+        result = {
+            "products": product_lists,
+            "filters": filters_data,
+        }
+
+        return result , pagination
+
+    def get_products_filtering(self, db: Session):
+        
+        PV = ProductVariation
+        P = Product
+        
+        # 1. محدوده قیمت: حداقل و حداکثر sales_price در میان variationهای فیلتر شده
+        price_range_query = (
+            db.query(
+                func.min(PV.sales_price),
+                func.max(PV.sales_price)
+            )
+            .join(P, P.id == PV.product_id)
+            .filter(P.status == Status.PUBLISHED)
+            .filter(
+                or_(
+                    PV.status == "INSTOCK",
+                    P.type == ProductType.SIMPLE
+                )
+            )
+        )
+        # if product_config.categories:
+        #     price_range_query = price_range_query.filter(
+        #         and_(*[P.categories.any(Category.id == cat_id) for cat_id in product_config.categories])
+        #     )
+        min_price, max_price = price_range_query.first() or (0,0)
+
+        # 2. دسته‌بندی‌های موجود (برای محصولات فیلتر شده)
+        categories_query = (
+            db.query(Category)
+            .join(P.categories)
+            .filter(P.status == Status.PUBLISHED)
+        )
+        available_categories = categories_query.distinct().all()
+
+        # 3. گزینه‌های مرتب‌سازی (ثابت)
+        ordering_options = ["newest", "expensive", "cheapest"]
+
+        filters_data = {
+            "min_price": min_price,
+            "max_price": max_price,
+            "categories": available_categories,
+            "ordering_options": ordering_options,
+        }
+        
+        return filters_data
+
     def get(self, db: Session, product_slug: str):
         
         product_item = db.query(Product).options(
