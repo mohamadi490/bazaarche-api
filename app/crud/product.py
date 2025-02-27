@@ -86,6 +86,11 @@ class ProductService:
             )
             .filter(P.status == Status.PUBLISHED)
         )
+        
+        # **اعمال فیلتر جستجو بر اساس نام محصول**
+        if getattr(product_config, "keyword", None):
+            # استفاده از ilike برای جستجو به صورت case-insensitive
+            query = query.filter(P.name.icontains(f"%{product_config.keyword}%"))
 
         # اعمال فیلتر بر اساس دسته‌بندی‌ها
         if product_config.categories:

@@ -142,6 +142,7 @@ class AttributeSchema(BaseModel):
     
 
 class ProductConfig(BaseModel):
+    keyword:Optional[str] = None
     categories: Optional[list[int]] = None
     order_by: str = 'newest'
     price_min: Optional[int] = None
