@@ -148,6 +148,38 @@ class ProductService:
 
         return result , pagination
 
+    def get_info(self, db: Session, product_slug: str):
+        product_item = db.query(Product).options(
+            joinedload(Product.user).load_only(User.id, User.username),
+            joinedload(Product.files),
+            joinedload(Product.categories).load_only(Category.id, Category.name, Category.slug, Category.parent_id),
+            joinedload(Product.attributes).joinedload(ProductAttribute.attribute),
+            joinedload(Product.variations)
+                .joinedload(ProductVariation.variation_attributes)
+                .joinedload(VariationAttribute.product_attribute)
+                .joinedload(ProductAttribute.attribute),
+            joinedload(Product.tags)
+        ).filter(Product.slug == product_slug).first()
+        
+        if not product_item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='محصول مورد نظر پیدا نشد')
+        
+        # اضافه کردن لیست ویژگی‌ها به محصول
+        product_item.attributes_list = [
+            {'name': attr.attribute.name, 'value': attr.value} for attr in product_item.attributes
+        ]
+        
+        # features list of variation
+        for var in product_item.variations:
+            var.attributes_list = [
+                {
+                    'name': va.product_attribute.attribute.name,
+                    'value': va.product_attribute.value
+                } for va in var.variation_attributes
+            ]
+        
+        return product_item
+
     def get_products_filtering(self, db: Session):
         
         PV = ProductVariation

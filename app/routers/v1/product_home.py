@@ -22,5 +22,5 @@ async def get_products(product_config: ProductConfig, db: Session = Depends(get_
 
 @product_router.get("/{product_slug}", response_model=Result[Product], status_code=status.HTTP_200_OK)
 async def get_info(product_slug: str, db: Session = Depends(get_db)):
-    product_item = product_service.get(db=db, product_slug=product_slug)
+    product_item = product_service.get_info(db=db, product_slug=product_slug)
     return Result(isDone=True, data=product_item, message='عملیات با موفقیت انجام شد!')
