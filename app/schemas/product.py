@@ -148,3 +148,16 @@ class ProductConfig(BaseModel):
     price_min: Optional[int] = None
     price_max: Optional[int] = None
     paginate: paginationConfig
+
+class AdminProductSearchParams(BaseModel):
+    name: Optional[str] = None          # جستجو بر اساس نام محصول
+    sku: Optional[str] = None           # جستجو بر اساس SKU محصول
+    created_from: Optional[datetime] = None  # تاریخ شروع ایجاد محصول (برای فیلترینگ بازه زمانی)
+    created_to: Optional[datetime] = None    # تاریخ پایان ایجاد محصول
+    categories: Optional[List[int]] = None     # لیست شناسه دسته‌بندی‌ها جهت فیلتر کردن
+
+class AdminProductsRequest(BaseModel):
+    order_by: Optional[str] = "created_at"   # ستون مرتب‌سازی (مثلاً: created_at, name, sales_price)
+    order_dir: Optional[str] = "desc"         # جهت مرتب‌سازی (asc یا desc)
+    search_params: Optional[AdminProductSearchParams] = None  # پارامترهای جستجو و فیلترینگ
+    paginate: paginationConfig

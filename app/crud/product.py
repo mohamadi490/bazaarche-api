@@ -5,21 +5,84 @@ from sqlalchemy.orm import Session, joinedload
 from models import File, User, Category
 from models.product import Attribute, Product, ProductAttribute, ProductType, ProductVariation, Status, VariationAttribute
 from schemas.pagination import Pagination
-from schemas.product import ProductConfig, ProductCreate, ProductUpdate
+from schemas.product import ProductConfig, ProductCreate, ProductUpdate, AdminProductsRequest
 from starlette import status
 
 
 class ProductService:
     
-    def get_products(self, db: Session, page: int, size: int):
+    def get_admin_products(self, db: Session, product_request: AdminProductsRequest):
+        """
+        واکشی محصولات جهت بخش ادمین با امکان جستجو، فیلترینگ و ordering داینامیک.
+
+        پارامترها:
+          - search_params: دیکشنری شامل کلیدهای فیلترینگ (مثلاً 'name', 'sku', 'created_from', 'created_to', …)
+          - order_by: نام ستونی که باید مرتب شود (مثلاً 'name', 'created_at', 'sales_price')
+          - order_dir: جهت مرتب‌سازی ('asc' یا 'desc')
+        """
+
+        # کوئری اولیه با joinedload روابط مورد نیاز
         query = db.query(Product).options(
             joinedload(Product.user).load_only(User.id, User.username),
             joinedload(Product.files),
             joinedload(Product.variations),
-            joinedload(Product.categories).load_only(Category.id, Category.name,Category.slug, Category.parent_id),
-            ).order_by(Product.created_at.desc())
-        paginated_query, total_items, total_pages = Pagination.paginate_query(query, page, size)
+            joinedload(Product.categories).load_only(Category.id, Category.name, Category.slug, Category.parent_id)
+        )
+    
+        # فیلترهای پیش‌فرض: نمایش محصولات منتشر شده
+        query = query.filter(Product.status == Status.PUBLISHED)
+    
+        # اعمال فیلترهای داینامیک از search_params
+        if product_request.search_params:
+            if product_request.search_params.name:
+                query = query.filter(Product.name.ilike(f"%{product_request.search_params.name}%"))
+            if product_request.search_params.sku:
+                query = query.join(Product.variations).filter(ProductVariation.sku.ilike(f"%{product_request.search_params.sku}%"))
+            if product_request.search_params.created_from:
+                query = query.filter(Product.created_at >= product_request.search_params.created_from)
+            if product_request.search_params.created_to:
+                query = query.filter(Product.created_at <= product_request.search_params.created_to)
+    
+        # تعیین ordering داینامیک
+        # نگاشت ستون‌های قابل مرتب‌سازی به فیلدهای واقعی در مدل
+        order_map = {
+            "name": Product.name,
+            "created_at": Product.created_at,
+            "updated_at": Product.updated_at,
+            "sales_price": None
+        }
+        if product_request.order_by:
+            if product_request.order_by == "sales_price":
+                # زیرکوئری جهت بدست آوردن کمترین sales_price برای هر محصول
+                min_price_subq = (
+                    db.query(
+                        ProductVariation.product_id,
+                        func.min(ProductVariation.sales_price).label("min_sales_price")
+                    )
+                    .group_by(ProductVariation.product_id)
+                    .subquery()
+                )
+                query = query.join(min_price_subq, Product.id == min_price_subq.c.product_id)
+                col = min_price_subq.c.min_sales_price
+            else:
+                col = order_map.get(product_request.order_by)
+            
+            if col is not None:
+                if product_request.order_dir.lower() == "desc":
+                    query = query.order_by(col.desc())
+                else:
+                    query = query.order_by(col)
+            else:
+                query = query.order_by(Product.created_at.desc())
+        else:
+            query = query.order_by(Product.created_at.desc())
+    
+        # صفحه‌بندی
+        paginate_config = product_request.paginate
+        paginated_query, total_items, total_pages = Pagination.paginate_query(query, paginate_config.page, paginate_config.size)
         items = paginated_query.all()
+    
+        # پردازش نهایی هر محصول: انتخاب variation با کمترین sales_price به صورت پایتون
         for product in items:
             product.categories = [cat for cat in product.categories if cat.parent_id is None]
             if product.variations:
@@ -31,8 +94,8 @@ class ProductService:
                 product.quantity = min_variation.quantity
                 product.reserved_quantity = min_variation.reserved_quantity
                 product.var_status = min_variation.status
-            
-        pagination = Pagination(page=page, size=size, total_items=total_items, total_pages=total_pages)
+    
+        pagination = Pagination(page=paginate_config.page, size=paginate_config.size, total_items=total_items, total_pages=total_pages)
         return items, pagination
 
     def get_home_products(self, db: Session, product_config: ProductConfig):
