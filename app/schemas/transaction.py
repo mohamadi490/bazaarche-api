@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 
+from schemas.order import OrderItemSchema
+
 
 class TransactionBase(BaseModel):
     order_id: Optional[int] = None
@@ -12,6 +14,9 @@ class TransactionBase(BaseModel):
     ref_id: Optional[int] = None
     amount: int
     status: str
+
+class transaction_order(TransactionBase):
+    order: OrderItemSchema
     
     
 class TransactionSchema(TransactionBase):
@@ -24,16 +29,18 @@ class createTransaction(BaseModel):
     payment_method_id: Optional[int] = None
     transaction_type: str
     description: str
-    amount: int
+    amount: Optional[int] = None
 
 class PayTransactionRes(BaseModel):
     status_code: int
     payment_url: str
     res_number: str
  
-class VerifyTransaction(BaseModel):
+class VerifyTransactionReq(BaseModel):
     status: str
     res_number: str
+
+class VerifyTransaction(VerifyTransactionReq):
     amount: int
 
 class VerifyTransactionRes(BaseModel):

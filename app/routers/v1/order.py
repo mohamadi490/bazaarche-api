@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from core.security import get_current_user
 from crud.order import order_service
 from core.database import get_db
-from schemas.order import CreateOrder, UpdateOrder, OrderListSchema
+from schemas.order import CreateOrder, OrderItemSchema, OrderResponse, UpdateOrder, OrderListSchema
 from schemas.result import PaginationResult, Result
 from starlette import status
 from schemas.user import UserBase
@@ -25,10 +25,10 @@ async def get_order(order_id: int, db: Session = Depends(get_db), current_user: 
     data = order_service.get(db=db, order_id=order_id)
     return Result(isDone=True, data=data, message='عملیات با موفقیت انجام شد')
 
-@order_router.post('/create', response_model=Result[None], status_code=status.HTTP_201_CREATED)
+@order_router.post('/create', response_model=Result[OrderResponse], status_code=status.HTTP_201_CREATED)
 async def create_order(order_in: CreateOrder, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
-    order_id = order_service.create(db=db, order_in=order_in, current_user=current_user)
-    return Result(isDone=True, data=order_id, message='سفارش با موفقیت ایجاد شد')
+    order = order_service.create(db=db, order_in=order_in, current_user=current_user)
+    return Result(isDone=True, data=order, message='سفارش با موفقیت ایجاد شد')
 
 @order_router.put('/update', response_model=Result[None], status_code=status.HTTP_200_OK)
 async def update_order(data: UpdateOrder, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):

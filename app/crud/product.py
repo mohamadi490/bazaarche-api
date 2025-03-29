@@ -602,6 +602,17 @@ class ProductService:
             db.rollback()
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'عملیات رزرو تعداد محصول با خطا مواجه شد')
     
+    def finalize_reserved_quantity(self, db: Session, variation_id: int, quantity: int):
+        try:
+            product_variation = self.get_variation_by_id(db, variation_id)
+            product_variation.reserved_quantity -= quantity
+            db.add(product_variation)
+            db.commit()
+            db.refresh(product_variation)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f'عملیات رزرو تعداد محصول با خطا مواجه شد')
+    
     def get_attributes(self, db: Session):
         attributes = db.query(Attribute).all()
         return attributes

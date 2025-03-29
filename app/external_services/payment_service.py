@@ -8,8 +8,10 @@ MERCHANT_ID = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 class Payment:
     
-    def request_pay(amount: int, description: str, callback_url: str) -> PayTransactionRes:
+    def request_pay(self, amount: int, description: str) -> PayTransactionRes:
         try:
+            # get callback_url from setting
+            callback_url = "http://127.0.0.1:4200/verify"
             response = requests.post(
                 f"{ZARINPAL_SANDBOX}request.json",
                 json={
@@ -25,12 +27,13 @@ class Payment:
                 raise HTTPException(status_code=500, detail="payment Error!")
             return PayTransactionRes(
                 status_code=res_data['data']["code"],
-                payment_url=f"https://sandbox.zarinpal.com/pg/StartPay/{res_data['data']['authority']}", 
-                res_number={res_data['data']['authority']})
+                payment_url=f"https://sandbox.zarinpal.com/pg/StartPay/{res_data['data']['authority']}",
+                res_number=res_data['data']['authority']
+            )
         except Exception as e:
             raise HTTPException(status_code=500, detail="payment Error!")
 
-    def verify_pay(data: VerifyTransaction) -> VerifyTransactionRes:
+    def verify_pay(self, data: VerifyTransaction) -> VerifyTransactionRes:
         if data.status != "OK":
             return VerifyTransactionRes(status=TransactionStatus.Canceled)
         
@@ -58,5 +61,3 @@ class Payment:
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail="Payment verification error!")
-    
-payment_service = Payment()

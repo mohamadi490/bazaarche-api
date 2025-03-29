@@ -28,6 +28,11 @@ class CreateOrder(BaseModel):
 
     class Config:
         orm_mode = True
+    
+class OrderResponse(BaseModel):
+    id: int
+    final_price: int
+    status: str
 
 class UpdateOrder(BaseModel):
     address_id: int
