@@ -27,7 +27,7 @@ async def create_attribute(attribute_name: str, db: Session = Depends(get_db), c
     return Result(isDone=True, data=None, message='ویژگی با موفقیت ایجاد شد')
 
 
-@admin_product_router.get("/", response_model=PaginationResult[List[ProductList]], status_code=status.HTTP_200_OK)
+@admin_product_router.post("/", response_model=PaginationResult[List[ProductList]], status_code=status.HTTP_200_OK)
 async def get_products(product_request: AdminProductsRequest, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
     items, pagination = product_service.get_admin_products(db, product_request)
     return PaginationResult(isDone=True, data=items, pagination=pagination, message='عملیات با موفقیت انجام شد!')
