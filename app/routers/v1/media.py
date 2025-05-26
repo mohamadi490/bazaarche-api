@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query, UploadFile, File, HTTPException
 from core.media import MediaService
+from fastapi import Request
 
 media_router = APIRouter(
     prefix='/media',
@@ -20,7 +21,9 @@ async def get_all(folder_name: str = Query('')):
 async def upload_file(file: UploadFile = File(...)):
     try:
         file_path = media_service.save_file(file)
-        return {"filename": file.filename, "file_path": file_path}
+        base_url = f"{Request.url.scheme}://{Request.url.hostname}"  # به‌دست آوردن آدرس پایه به‌صورت خودکار
+        full_url = f"{base_url}/media/files/{file.filename}"  # مسیر کامل فایل
+        return {"filename": file.filename, "file_path": file_path, "full_url": full_url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
