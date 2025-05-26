@@ -18,11 +18,11 @@ async def get_all(folder_name: str = Query('')):
         raise HTTPException(status_code=500, detail=str(e))
 
 @media_router.post("/files/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), request: Request = Request):
     try:
         file_path = media_service.save_file(file)
-        base_url = f"{Request.url.scheme}://{Request.url.hostname}"  # به‌دست آوردن آدرس پایه به‌صورت خودکار
-        full_url = f"{base_url}/media/files/{file.filename}"  # مسیر کامل فایل
+        base_url = f"{request.url.scheme}://{request.url.hostname}"
+        full_url = f"{base_url}/uploads/{file.filename}"
         return {"filename": file.filename, "file_path": file_path, "full_url": full_url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
