@@ -1,0 +1,24 @@
+name: CI
+on: [pull_request, push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/bazaarche
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET: ci_test_secret_not_for_production
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: password, POSTGRES_DB: bazaarche }
+        ports: ["5432:5432"]
+      redis:
+        image: redis:8-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run black --check .
+      - run: uv run pytest

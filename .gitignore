@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL support
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments & Packages
+.env
+.venv
+env/
+venv/
+ENV/
+__pypackages__/
+
+# Unit test / coverage reports
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Linters and type checkers
+.mypy_cache/
+.ruff_cache/
+.scantree_cache/
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Database / Docker / Cache (local overrides only)
+.docker/
+*.log
